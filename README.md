@@ -29,13 +29,6 @@ flutter test
 Для виправлення форматування: `dart format lib test`.
 Правила роботи агента та рекомендації для code review містяться в `AGENTS.md`.
 
-### Автоматична перевірка в GitHub
-
-Workflow `.github/workflows/flutter-checks.yml` запускає перевірку форматування,
-аналіз коду та тести на кожен push і pull request. Результати доступні у вкладці
-**Actions** і в перевірках pull request після відправлення цих файлів у GitHub.
-Версія Flutter для CI береться з `.fvmrc`.
-
 ### Codex code review
 
 Окремо увімкни автоматичний code review для цього репозиторію в налаштуваннях
