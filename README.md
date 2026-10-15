@@ -5,8 +5,8 @@
 
 ## Інструменти
 
-- Flutter 3.47.5 (stable).
-- Dart 3.13.4, який входить до цієї версії Flutter.
+- Flutter 3.47.7 (stable), версія закріплена у `.fvmrc`.
+- Dart 3.13.5, який входить до цієї версії Flutter.
 - Для запуску Android: Android SDK та емулятор або телефон із налагодженням через USB.
 - Збірка і запуск iOS потребують macOS та Xcode.
 
@@ -34,7 +34,7 @@ flutter test
 Workflow `.github/workflows/flutter-checks.yml` запускає перевірку форматування,
 аналіз коду та тести на кожен push і pull request. Результати доступні у вкладці
 **Actions** і в перевірках pull request після відправлення цих файлів у GitHub.
-Використовується Flutter 3.47.5; при оновленні SDK змінюй також версію у workflow.
+Версія Flutter для CI береться з `.fvmrc`.
 
 ### Codex code review
 
