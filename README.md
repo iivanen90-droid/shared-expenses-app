@@ -65,6 +65,6 @@ flutter run
 Основна (default) і захищена гілка розробки — `develop`.
 Для кожної задачі створюється окрема гілка
 від `origin/develop`, а зміни подаються через pull request із явно вибраною базою `develop`.
-Перед злиттям потрібні review Антона й одне схвалення. Прямі push, force push,
+Перед злиттям потрібні code review та одне схвалення. Прямі push, force push,
 видалення `develop` та обхід захисту адміністраторами заборонені.
 Докладніше — у [CLAUDE.md](CLAUDE.md) і [AGENTS.md](AGENTS.md).
