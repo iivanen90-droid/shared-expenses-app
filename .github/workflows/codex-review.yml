@@ -1,0 +1,61 @@
+name: Request Codex review
+
+on:
+  pull_request:
+    branches: [develop, main]
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  pull-requests: write
+
+concurrency:
+  group: codex-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  request-review:
+    if: >-
+      !github.event.pull_request.draft &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Post review request
+        uses: actions/github-script@v8
+        env:
+          REVIEW_RUN_ATTEMPT: ${{ github.run_attempt }}
+        with:
+          script: |
+            const pullRequest = context.payload.pull_request;
+            const marker = `<!-- codex-review:${pullRequest.head.sha} -->`;
+            const issue = { ...context.repo, issue_number: pullRequest.number };
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { ...issue, per_page: 100 },
+            );
+            // A deliberate retry must work even if Codex ignored the first request.
+            const retryRequested = Number(process.env.REVIEW_RUN_ATTEMPT) > 1 ||
+              context.payload.action === 'reopened';
+            if (!retryRequested && comments.some(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body?.includes(marker)
+            )) {
+              core.info('A review request already exists for this commit.');
+              return;
+            }
+            // Re-runs retain the original event payload; do not review an old head.
+            const { data: currentPullRequest } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: pullRequest.number,
+            });
+            if (currentPullRequest.state !== 'open' ||
+                currentPullRequest.draft ||
+                currentPullRequest.head.sha !== pullRequest.head.sha) {
+              core.info('Skipping a closed, draft, or outdated pull request event.');
+              return;
+            }
+            await github.rest.issues.createComment({
+              ...issue,
+              body: `@codex review\n\n${marker}`,
+            });
