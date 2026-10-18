@@ -10,6 +10,5 @@ Future<void> run({required EnvironmentType environment}) async {
   if (kDebugMode) binding.ensureSemantics();
   await EasyLocalization.ensureInitialized();
   MainDependenciesModuleResolver.register(environment: environment);
-  await DependencyProvider.get<ApplicationInitializer>().initialize();
   runApp(const LocalizationsWrapper(child: App()));
 }

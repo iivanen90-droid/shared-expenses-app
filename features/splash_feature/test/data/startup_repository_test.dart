@@ -6,13 +6,17 @@ import 'package:splash_feature/src/data/source/startup_source.dart';
 
 class _Source extends Mock implements StartupSource {}
 
+class _Initializer extends Mock implements ApplicationInitializer {}
+
 class _CrashReporting extends Mock implements CrashReportingService {}
 
 void main() {
   test('readiness is required to continue', () async {
     final status = StartupStatusImpl();
+    final initializer = _Initializer();
+    when(initializer.initialize).thenAnswer((_) async {});
     final repository = StartupRepositoryImpl(
-      source: StartupSourceImpl(startupStatus: status),
+      source: StartupSourceImpl(startupStatus: status, initializer: initializer),
       crashReporting: _CrashReporting(),
     );
     expect((await repository.checkReadiness()).isLeft(), isTrue);

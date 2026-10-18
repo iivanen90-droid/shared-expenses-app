@@ -1,3 +1,7 @@
+abstract interface class ApplicationInitializer {
+  Future<void> initialize();
+}
+
 abstract interface class StartupStatus {
   bool get isReady;
   void markReady();

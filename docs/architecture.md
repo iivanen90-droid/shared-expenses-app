@@ -28,7 +28,7 @@ Dart workspace зі спільним `pubspec.lock`, версії залежно
 core, router, ui_kit. Зв'язки common ↔ feature ↔ router відповідають довіднику; чужий `src/` заборонений.
 Прямі імпорти feature → feature заборонені. Спільні контракти надалі додаються в core.
 
-Запуск: binding → EasyLocalization → DI (core, data → domain → ui) → ApplicationInitializer → App.
+Запуск: binding → EasyLocalization → DI (core, data → domain → ui) → App → splash → ApplicationInitializer. Помилка ініціалізації проходить через repository до стану splash; кнопка повтору знову виконує ініціалізацію.
 Splash: `Page → Cubit → StartupInteractor → StartupRepository → StartupSource → StartupStatus`.
 Результат — `Either<Failure, Unit>`; помилки перетворюються на Failure. Після успіху типізований маршрут
 замінює splash на home. Сторінки самі створюють Cubit через BlocProvider і DependencyProvider.

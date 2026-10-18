@@ -23,11 +23,10 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
-    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
   });
   tearDown(DependencyProvider.reset);
   testWidgets('splash opens the localized home screen through the real DI and router', (tester) async {
-    await DependencyProvider.get<ApplicationInitializer>().initialize();
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
     await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
     await tester.pumpAndSettle();
     expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
@@ -40,14 +39,20 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
+    final status = StartupStatusImpl();
+    final initializer = _RetryInitializer(status);
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev, initializer: initializer);
+    // Use the same status observed by the startup source.
+    initializer.status = DependencyProvider.get<StartupStatus>();
     await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
     await tester.pumpAndSettle();
     expect(DependencyProvider.get<StartupStatus>().isReady, isFalse);
     expect(find.bySemanticsIdentifier('splash_retry'), findsOneWidget);
-    DependencyProvider.get<StartupStatus>().markReady();
+    expect(initializer.attempts, 1);
     await tester.tap(find.bySemanticsIdentifier('splash_retry'));
     await tester.pumpAndSettle();
     expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+    expect(initializer.attempts, 2);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
@@ -59,4 +64,16 @@ class _TranslationsLoader extends AssetLoader {
   @override
   Future<Map<String, dynamic>> load(String path, Locale locale) =>
       Future.value(translations[locale.languageCode] ?? const {});
+}
+
+class _RetryInitializer implements ApplicationInitializer {
+  _RetryInitializer(this.status);
+  StartupStatus status;
+  int attempts = 0;
+  @override
+  Future<void> initialize() async {
+    attempts++;
+    if (attempts == 1) throw StateError("Initialization failed");
+    status.markReady();
+  }
 }

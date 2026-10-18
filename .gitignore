@@ -66,3 +66,6 @@ app.*.map.json
 **/pubspec_overrides.yaml
 /envs/*.json
 !/envs/*.example.json
+
+# Kotlin local compiler cache
+**/.kotlin/
