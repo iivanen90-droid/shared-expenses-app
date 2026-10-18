@@ -1,0 +1,4 @@
+global_options:
+  freezed:freezed:
+    options:
+      line_length: 120

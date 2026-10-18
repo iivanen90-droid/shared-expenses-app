@@ -1,0 +1,22 @@
+name: home_feature
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: ^3.13.5
+resolution: workspace
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+  ui_kit:
+  common:
+  flutter_bloc:
+  freezed_annotation:
+  material_ui:
+  easy_localization:
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner:
+  freezed:
+  mocktail:
