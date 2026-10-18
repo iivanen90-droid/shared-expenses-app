@@ -9,7 +9,8 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: codex-review-${{ github.event.pull_request.number }}
+  # Keep manual retries away from the latest automatic run and from other heads.
+  group: codex-review-${{ github.event.pull_request.number }}-${{ github.run_attempt == 1 && 'events' || format('retry-{0}', github.event.pull_request.head.sha) }}
   cancel-in-progress: true
 
 jobs:

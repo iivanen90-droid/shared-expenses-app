@@ -46,10 +46,32 @@ test('review requests cover PRs into develop and main', () => {
   assert.match(workflow, /branches: \[develop, main\]/);
   assert.match(workflow, /types: \[opened, reopened, synchronize, ready_for_review\]/);
 });
-test('new push cancels an earlier run for the same PR', () => {
-  assert.match(workflow, /group: codex-review-\$\{\{ github\.event\.pull_request\.number \}\}/);
+// Evaluate the actual workflow group expression for the competing run contexts.
+function groupFor(sha, attempt = 1, number = 3) {
+  const template = workflow.match(/^  group: (.+)$/m)[1];
+  const github = { run_attempt: attempt,
+    event: { pull_request: { number, head: { sha } } } };
+  return template.replace(/\$\{\{(.*?)\}\}/g, (_, expression) =>
+    new Function('github', 'format', `return (${expression});`)(
+      github, (template, value) => template.replace('{0}', value),
+    ));
+}
+
+test('new automatic pushes share a cancellation group within one PR', () => {
+  assert.equal(groupFor('old'), groupFor('new'));
+  assert.notEqual(groupFor('new', 1, 3), groupFor('new', 1, 4));
   assert.match(workflow, /cancel-in-progress: true/);
   assert.match(workflow, /REVIEW_RUN_ATTEMPT: \$\{\{ github\.run_attempt \}\}/);
+});
+
+test('a stale manual retry cannot cancel or replace a new automatic run', () => {
+  assert.notEqual(groupFor('old', 2), groupFor('new', 1));
+});
+test('manual retries for different heads cannot cancel each other', () => {
+  assert.notEqual(groupFor('old', 2), groupFor('new', 2));
+});
+test('manual retries for the same head remain serialized', () => {
+  assert.equal(groupFor('current', 2), groupFor('current', 3));
 });
 test('a new head receives a review request', async () => {
   const { posted } = await run({ comments: [{ ...existing,
