@@ -1,0 +1,22 @@
+name: router
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: ^3.13.5
+resolution: workspace
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+  ui_kit:
+  common:
+  splash_feature:
+  home_feature:
+  go_router:
+  material_ui:
+  cupertino_ui:
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner:
+  go_router_builder:

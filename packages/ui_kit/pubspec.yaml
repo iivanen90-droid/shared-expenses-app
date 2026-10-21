@@ -1,0 +1,28 @@
+name: ui_kit
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: ^3.13.5
+resolution: workspace
+dependencies:
+  flutter:
+    sdk: flutter
+  material_ui:
+  cupertino_ui:
+  flutter_svg:
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner:
+  flutter_gen_runner:
+flutter:
+  assets:
+    - assets/icons/
+flutter_gen:
+  output: lib/src/generated/
+  line_length: 120
+  assets:
+    outputs:
+      package_parameter_enabled: true
+  integrations:
+    flutter_svg: true

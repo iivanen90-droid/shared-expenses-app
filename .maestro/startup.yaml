@@ -1,0 +1,5 @@
+appId: com.example.shared_expenses_app.dev
+---
+- launchApp
+- assertVisible:
+    id: home_title

@@ -1,0 +1,24 @@
+name: common
+publish_to: 'none'
+version: 0.1.0+1
+environment:
+  sdk: ^3.13.5
+resolution: workspace
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+  ui_kit:
+  router:
+  splash_feature:
+  home_feature:
+  flutter_bloc:
+  easy_localization:
+  material_ui:
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  mocktail:
+flutter:
+  assets:
+    - lib/src/localization/langs/
