@@ -23,8 +23,74 @@ fvm use 3.47.7
 fvm flutter pub get
 ```
 
-Учасники workspace мають `resolution: workspace`; версії пакетів задаються в root `pubspec.yaml`.
-Не запускати незалежний `pub get` зі скинутим workspace і не комітити lockfile у підпакетах.
+Якщо `fvm` ще не встановлено, скористайтеся [інструкцією FVM](https://fvm.app/documentation/getting-started/installation).
+Після встановлення executable FVM має бути доступний у `PATH` термінала.
+У `.fvmrc` задано `privilegedAccess: false`: команди FVM працюють без створення символічних
+посилань SDK, зокрема на Windows без прав адміністратора. `updateVscodeSettings: false`
+залишає вибір SDK в IDE користувачу; для CLI достатньо команд `fvm flutter` і `fvm dart`.
+`.fvmrc` зберігається у Git; каталог `.fvm/` із локальним SDK і посиланнями ігнорується.
+Не використовуйте `fvm global`: версія обирається лише для цього репозиторію.
+
+## Учасники workspace та залежності
+
+Workspace member — пакет із власним `pubspec.yaml`, зареєстрований у `workspace:` кореневого
+`pubspec.yaml`. Усі учасники використовують один набір версій, кореневі `pubspec.lock` і
+`.dart_tool/package_config.json`. Dart workspaces підтримуються починаючи з Dart 3.6;
+зафіксована для проєкту версія Dart 3.13.5 підходить.
+
+| Каталог | `name` пакета |
+|---|---|
+| `packages/core/` | `core` |
+| `packages/ui_kit/` | `ui_kit` |
+| `packages/common/` | `common` |
+| `packages/router/` | `router` |
+| `mobile/` | `mobile` |
+| `features/splash_feature/` | `splash_feature` |
+| `features/home_feature/` | `home_feature` |
+
+Кожен учасник має `resolution: workspace` і `publish_to: 'none'`. Версії зовнішніх залежностей
+обмежуються в кореневому `pubspec.yaml`, учасники перелічують потрібні пакети без версій.
+Обмеження кореня беруть участь у спільному розв'язанні залежностей; точні версії записані у lockfile.
+Внутрішні пакети автоматично беруться з workspace за `name`, без `path:` чи `dependency_overrides`.
+Окремих overrides або Melos для поточної структури не потрібно.
+Не запускайте незалежний `pub get` зі скинутим workspace і не комітьте lockfile у підпакетах.
+Звичайний `pub get` з каталогу учасника також використовує кореневий workspace.
+
+Перевірити зареєстровані пакети з кореня:
+
+```sh
+fvm dart pub workspace list
+```
+
+### Додавання feature-пакета
+
+Приклад нижче — шаблон для майбутньої погодженої функції, а не вже створений пакет.
+
+1. Створіть `features/example_feature/lib/example_feature.dart` і `features/example_feature/pubspec.yaml`:
+
+```yaml
+name: example_feature
+publish_to: 'none'
+environment:
+  sdk: ^3.13.5
+resolution: workspace
+
+dependencies:
+  flutter:
+    sdk: flutter
+  core:
+```
+
+2. Додайте `  - features/example_feature` до списку `workspace:` у кореневому `pubspec.yaml`.
+   Назва пакета має бути унікальною. Версію нової зовнішньої залежності задайте в корені,
+   а в пакеті додайте її без версії.
+3. У пакеті-споживачі додайте залежність `example_feature:` й імпортуйте публічний barrel:
+   `package:example_feature/example_feature.dart`. Саме членство у workspace не замінює залежність.
+4. Додайте потрібні data/domain/ui, тести й DI за [архітектурною інструкцією](docs/architecture.md#нова-фіча).
+   Якщо фіча містить екран, зареєструйте його DI у common та маршрут у router.
+5. З кореня виконайте `fvm flutter pub get`, `fvm dart pub workspace list` та
+   `fvm dart tools/workspace.dart check`. Для фіч із codegen перед перевіркою виконайте
+   `fvm dart tools/workspace.dart generate`. Комітьте зміни кореневого lockfile разом із pubspec-файлами.
 
 ## Запуск
 
