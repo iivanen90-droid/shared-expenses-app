@@ -7,6 +7,12 @@ final members = RegExp(r'^  - ([a-z_/]+)$', multiLine: true)
     .map((match) => match.group(1))
     .whereType<String>()
     .toList();
+final sourcePaths = [
+  'tools',
+  for (final member in members)
+    for (final folder in ['lib', 'test'])
+      if (Directory('${root.path}/$member/$folder').existsSync()) '$member/$folder',
+];
 
 Future<void> command(String tool, List<String> arguments, {String? package}) async {
   final String executable;
@@ -78,25 +84,17 @@ Future<void> main(List<String> args) async {
         }
       }
       normalizeGeneratedFiles();
-      await command('dart', ['format', 'mobile', 'packages', 'features', 'tools']);
+      await command('dart', ['format', ...sourcePaths]);
     case 'format':
       normalizeGeneratedFiles();
-      await command('dart', ['format', 'mobile', 'packages', 'features', 'tools']);
+      await command('dart', ['format', ...sourcePaths]);
     case 'test':
       await tests();
     case 'analyze':
       await command('flutter', ['analyze', '--no-pub', '--fatal-infos', '--fatal-warnings']);
     case 'check':
       await command('flutter', ['pub', 'get', '--enforce-lockfile']);
-      await command('dart', [
-        'format',
-        '--output=none',
-        '--set-exit-if-changed',
-        'mobile',
-        'packages',
-        'features',
-        'tools',
-      ]);
+      await command('dart', ['format', '--output=none', '--set-exit-if-changed', ...sourcePaths]);
       await command('flutter', ['analyze', '--no-pub', '--fatal-infos', '--fatal-warnings']);
       await tests();
     default:
