@@ -14,7 +14,7 @@ Dart workspace: `mobile/`, `packages/{core,ui_kit,common,router}/`,
 
 ## Інструменти та залежності
 
-- Flutter **3.47.7** / Dart **3.13.5**, версія у `.fvmrc`; команди нижче використовують FVM.
+- Flutter **3.47.7** / Dart **3.13.5**, точна версія для всіх розробників; команди нижче використовують FVM.
 - Android SDK і JDK для Android; macOS/Xcode для iOS.
 - Ключі, локальні шляхи SDK та приватні envs не комітяться.
 
@@ -25,10 +25,20 @@ fvm flutter pub get
 
 Якщо `fvm` ще не встановлено, скористайтеся [інструкцією FVM](https://fvm.app/documentation/getting-started/installation).
 Після встановлення executable FVM має бути доступний у `PATH` термінала.
-У `.fvmrc` задано `privilegedAccess: false`: команди FVM працюють без створення символічних
-посилань SDK, зокрема на Windows без прав адміністратора. `updateVscodeSettings: false`
-залишає вибір SDK в IDE користувачу; для CLI достатньо команд `fvm flutter` і `fvm dart`.
-`.fvmrc` зберігається у Git; каталог `.fvm/` із локальним SDK і посиланнями ігнорується.
+`.fvmrc` і `.fvm/` локальні та ігноруються Git. Після кожного нового клонування
+виконайте `fvm use 3.47.7` з кореня: це створить локальний `.fvmrc` для потрібної версії.
+На Windows без прав створення symlink перед цією командою створіть у корені локальний `.fvmrc`:
+
+```json
+{
+  "flutter": "3.47.7",
+  "privilegedAccess": false,
+  "updateVscodeSettings": false
+}
+```
+
+У цьому режимі CLI працює без символічних посилань; SDK в IDE обирається вручну.
+Не додавайте локальний `.fvmrc` у Git примусово.
 Не використовуйте `fvm global`: версія обирається лише для цього репозиторію.
 
 ## Учасники workspace та залежності
@@ -106,6 +116,32 @@ fvm flutter run --flavor dev --dart-define-from-file=../envs/dev.example.json
 ENVIRONMENT має збігатися з native flavor. Dev має окремий id із `.dev`.
 Android productFlavors та iOS shared schemes налаштовані; iOS збирається тільки на macOS/Xcode.
 Production signing, сервер та публікація в магазинах не налаштовані.
+
+## Аналізатор і форматування
+
+Усі workspace-пакети й `mobile` успадковують кореневий `analysis_options.yaml` через пошук
+у батьківських каталогах. Не створюйте окремі правила в підпакетах без потреби;
+якщо локальний файл потрібний, він має явно включати кореневий через `include`.
+Основа — `flutter_lints`, увімкнені `strict-casts` і `strict-raw-types`, `formatter.page_width: 120`.
+
+| Рівень | Правила з архітектурного довідника |
+|---|---|
+| `error` | `unused_import`, `missing_required_param`, `must_be_immutable`, `missing_enum_constant_in_switch`, `sort_child_properties_last`, `missing_dependency`, `invalid_dependency` |
+| `warning` | `always_use_package_imports`, `prefer_const_constructors`, `require_trailing_commas`, `prefer_final_locals`, `avoid_print` |
+
+Згенеровані `*.g.dart`, `*.freezed.dart`, `generated/` та build-каталоги виключені з аналізу.
+`check` вважає невдалими і warnings, і infos. Форматування вихідного коду:
+
+```sh
+fvm dart tools/workspace.dart format
+fvm dart tools/workspace.dart check
+```
+
+Кореневий `build.yaml` задає Freezed `line_length: 120`; такі ж локальні налаштування є у
+feature-пакетах, звідки запускається генератор. У Freezed 3.2.5 `line_length` сам по собі
+не задає ширину DartFormatter: `format: true` прибирає заборону `dart format off`, а фінальний
+`dart format` у workspace-команді застосовує спільну ширину 120 до згенерованого коду.
+Локальні SDK, build/cache-каталоги та налаштування IDE виключені через `.gitignore`.
 
 ## Генерація
 

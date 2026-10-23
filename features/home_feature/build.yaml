@@ -4,3 +4,4 @@ targets:
       freezed:
         options:
           line_length: 120
+          format: true
