@@ -49,6 +49,6 @@ DTO/json_serializable та StatefulShellRoute потрібні лише разо
 5. Додати unit/widget/e2e перевірки погодженої поведінки; перевірити Android та iOS у доступному середовищі.
 
 Версії в довіднику — знімок Inspiro; фактично узгоджені версії фіксує root pubspec.lock.
-Flutter 3.47.7 зафіксовано в .fvmrc. Firebase, покупки, атрибуція та інтеграції не додаються автоматично.
+Flutter 3.47.7 обирається локально через `fvm use 3.47.7`; `.fvmrc` ігнорується Git. Firebase, покупки, атрибуція та інтеграції не додаються автоматично.
 Правила — у [CLAUDE.md](../CLAUDE.md) і [AGENTS.md](../AGENTS.md), команди — у [README](../README.md).
 Зміни — окремим PR у develop, code review та одне незалежне схвалення.

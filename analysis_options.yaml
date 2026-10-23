@@ -17,6 +17,11 @@ analyzer:
     sort_child_properties_last: error
     missing_dependency: error
     invalid_dependency: error
+    always_use_package_imports: warning
+    prefer_const_constructors: warning
+    require_trailing_commas: warning
+    prefer_final_locals: warning
+    avoid_print: warning
 formatter:
   page_width: 120
 linter:
