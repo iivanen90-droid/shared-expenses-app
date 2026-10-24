@@ -35,6 +35,35 @@ Splash: `Page → Cubit → StartupInteractor → StartupRepository → StartupS
 SafeCubitWrapper ігнорує завершення async-операцій після закриття екрана.
 Home поки не потребує repository/interactor; його data/domain-resolver не реєструють вигадані операції.
 
+## Контракти core: DI та помилки
+
+Публічний імпорт — `package:core/core.dart`. Він експортує `DependencyProvider`, абстрактний
+`Failure` і типи `Either`, `Left`, `Right` із fpdart. Версії get_it/fpdart задаються в root
+`pubspec.yaml`; core перелічує ці залежності без версій. Бізнес-правила й фічі до core не додаються.
+
+`DependencyProvider` — статичний фасад над get_it:
+
+| Метод | Контракт |
+|---|---|
+| `get<T>()` | Повертає зареєстрований сервіс типу T; відсутність реєстрації — помилка |
+| `getOrNull<T>()` | Повертає null для незареєстрованого T; помилки створення зареєстрованого сервісу не приховує |
+| `getWithParams<T>(param1: ..., param2: ...)` | Передає runtime-параметри фабриці; типи значень мають відповідати P1/P2 її реєстрації |
+| `registerFactory<T>(factory)` | Новий екземпляр при кожному отриманні |
+| `registerLazySingleton<T>(factory, dispose: ...)` | Один екземпляр, створюється при першому отриманні; необов'язковий dispose може бути синхронним або асинхронним |
+| `registerFactoryWithParams<T, P1, P2>(factory)` | Типізована фабрика з двома runtime-параметрами |
+| `isRegistered<T>()` | Перевіряє наявність реєстрації |
+| `reset()` | Повертає `Future<void>`, очищає реєстрації та очікує dispose вже створених singleton-сервісів |
+
+Завжди виконуйте `await DependencyProvider.reset()`; у тестах можна передати цей метод у
+`tearDown`. Невикористаний lazy singleton не створюється лише заради очищення. Фабричні
+екземпляри не зберігаються контейнером: їхній життєвий цикл завершує власник, наприклад BlocProvider.
+
+Операції domain/data, які можуть завершитися очікуваною помилкою, повертають
+`Either<Failure, T>` або `Future<Either<Failure, T>>`: `Left(failure)` — помилка,
+`Right(value)` — успіх. Конкретні Failure визначаються в модулі відповідного сценарію;
+винятки перетворюються на них на межі data/domain. Cubit обробляє обидві гілки через fold.
+Базовий Failure не містить бізнес-логіки чи даних користувача.
+
 ## UI, генерація та середовища
 
 UI імпортується з material_ui / cupertino_ui. Стилі — через AppThemeProvider і context-розширення;
