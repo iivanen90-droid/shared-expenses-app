@@ -4,10 +4,13 @@ abstract interface class SplashAnalytics {
   void onOpened();
 }
 
+enum _SplashEvent { opened }
+
 final class SplashAnalyticsImpl implements SplashAnalytics {
-  const SplashAnalyticsImpl({required this._tracker});
+  SplashAnalyticsImpl({required AnalyticsTrackerFactory trackerFactory})
+    : _tracker = trackerFactory.create(screenName: _screenName);
   static const _screenName = 'splash_page';
   final AnalyticsTracker _tracker;
   @override
-  void onOpened() => _tracker.track(event: 'opened_$_screenName');
+  void onOpened() => _tracker.track(eventName: _SplashEvent.opened.name);
 }
