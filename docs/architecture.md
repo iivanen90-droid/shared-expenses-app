@@ -64,6 +64,31 @@ Home поки не потребує repository/interactor; його data/domain-
 винятки перетворюються на них на межі data/domain. Cubit обробляє обидві гілки через fold.
 Базовий Failure не містить бізнес-логіки чи даних користувача.
 
+## Локальні налаштування: PreferencesStorage
+
+Споживачі отримують `PreferencesStorage` через `DependencyProvider.get<PreferencesStorage>()`
+з публічного `core.dart`; реалізація `PreferencesStorageImpl` не експортується з barrel.
+`CoreDependenciesModuleResolver` реєструє її як lazy singleton і викликається першим у
+`MainDependenciesModuleResolver`. Він також збирає решту базових core-сервісів.
+
+Обгортка використовує `SharedPreferencesAsync` без локального кешу. `readBool`, `readInt`,
+`readString` повертають відповідно `Future<bool?>`, `Future<int?>`, `Future<String?>`;
+відсутній ключ дає null. `writeBool`, `writeInt`, `writeString` та `remove` повертають
+`Future<void>` і мають очікуватися через await. Remove видаляє лише вказаний ключ, без clear
+усього сховища. Помилки платформи та невідповідність типу не приховуються: їх обробляє data/source
+споживача й за потреби перетворює на Failure.
+
+`WidgetsFlutterBinding.ensureInitialized()` викликається в mobile до реєстрації DI;
+нативний Flutter-registrant підключає плагін. Async API не потребує попереднього
+`SharedPreferences.getInstance()` чи окремого кешу: клієнт створюється при першому отриманні
+сервісу, доступ до платформи виконується асинхронними методами. У тестах перед отриманням
+сервісу встановлюється офіційний in-memory async backend; у production він не використовується.
+`shared_preferences_platform_interface` — лише пряма test-залежність core з версією в root.
+
+Сховище призначене для некритичних налаштувань, а не фінансових записів чи секретів.
+Обгортка не додає бізнес-ключів, не логує ключі/значення та не змінює сховище локалізації
+всередині easy_localization. Окремих налаштувань користувача в UI поки немає.
+
 ## UI, генерація та середовища
 
 UI імпортується з material_ui / cupertino_ui. Стилі — через AppThemeProvider і context-розширення;

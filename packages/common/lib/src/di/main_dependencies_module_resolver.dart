@@ -5,9 +5,7 @@ import 'package:common/src/initialization/application_initializer.dart';
 
 abstract interface class MainDependenciesModuleResolver {
   static void register({required EnvironmentType environment, ApplicationInitializer? initializer}) {
-    DependencyProvider.registerLazySingleton<StartupStatus>(StartupStatusImpl.new);
-    DependencyProvider.registerFactory<AnalyticsTracker>(() => AnalyticsTrackerImpl(enabled: environment.isDebug));
-    DependencyProvider.registerFactory<CrashReportingService>(CrashReportingServiceImpl.new);
+    CoreDependenciesModuleResolver.register(environment: environment);
     DependencyProvider.registerFactory<ApplicationInitializer>(
       () => initializer ?? ApplicationInitializerImpl(startupStatus: DependencyProvider.get<StartupStatus>()),
     );
