@@ -52,7 +52,8 @@ fvm dart tools/workspace.dart check
 ```
 
 Для виправлення форматування — `fvm dart tools/workspace.dart format`.
-Після зміни моделей, routes, локалізації чи assets — `fvm dart tools/workspace.dart generate`.
+Після зміни лише перекладів — `bash tools/tr_keys_gen.sh` або команда без Bash із README.
+Після зміни моделей, routes чи assets — `fvm dart tools/workspace.dart generate`.
 Перевірка виконує get, format, analyze та тести всіх пакетів; команди — у README.
 Додавай тести для нової бізнес-логіки та виправлених помилок; перевіряй
 поведінку, а не внутрішню будову реалізації. Для змін лише документації

@@ -3,15 +3,15 @@ import 'package:flutter/widgets.dart';
 
 class LocalizationsWrapper extends StatelessWidget {
   const LocalizationsWrapper({required this.child, this.assetLoader = const RootBundleAssetLoader(), super.key});
-  static const supportedLocales = [Locale('uk'), Locale('en')];
-  static const fallbackLocale = Locale('uk');
+  static const supportedLocales = [Locale('en'), Locale('uk')];
+  static const fallbackLocale = Locale('en');
   final Widget child;
   final AssetLoader assetLoader;
   @override
   Widget build(BuildContext context) => EasyLocalization(
     supportedLocales: supportedLocales,
-    startLocale: fallbackLocale,
     fallbackLocale: fallbackLocale,
+    useFallbackTranslations: true,
     path: 'packages/common/lib/src/localization/langs',
     assetLoader: assetLoader,
     child: child,
