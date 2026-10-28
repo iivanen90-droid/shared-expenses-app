@@ -1,3 +1,6 @@
+import 'package:flutter/cupertino.dart' show CupertinoPage;
+import 'package:router/router.dart';
+
 import 'dart:convert';
 import 'dart:async';
 
@@ -66,6 +69,98 @@ void main() {
     expect(DependencyProvider.get<StartupStatus>().isReady, isFalse);
   });
 
+  testWidgets('splash waits for initialization and is removed when tabs open', (tester) async {
+    final initializer = _BlockingInitializer();
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev, initializer: initializer);
+    try {
+      await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
+      await tester.pump();
+      expect(find.byType(AppLoading), findsOneWidget);
+      expect(find.byType(NavigationBar), findsNothing);
+      initializer.release.complete();
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      expect(find.byType(NavigationBar), findsOneWidget);
+      expect(GoRouterConfig.rootNavigatorKey.currentState?.canPop(), isFalse);
+      expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isFalse);
+      final didPop = await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(didPop, isFalse);
+      expect(find.byType(AppLoading), findsNothing);
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+    } finally {
+      if (!initializer.release.isCompleted) initializer.release.complete();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await DependencyProvider.reset();
+    }
+  });
+
+  testWidgets('both tabs preserve independent stacks including repeated tab selection', (tester) async {
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    try {
+      await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('home_open_details'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isTrue);
+      await tester.tap(find.bySemanticsIdentifier('tab_second'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('second_tab_title'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('second_open_details'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('second_details'), findsOneWidget);
+      expect(GoRouterConfig.secondNavigatorKey.currentState?.canPop(), isTrue);
+      await tester.tap(find.bySemanticsIdentifier('tab_home'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('tab_home'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('tab_second'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('second_details'), findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('second_tab_title'), findsOneWidget);
+      expect(GoRouterConfig.rootNavigatorKey.currentState?.canPop(), isFalse);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await DependencyProvider.reset();
+    }
+  });
+
+  testWidgets('language changes update both preserved tabs without resetting their stacks', (tester) async {
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    try {
+      await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('home_open_details'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('tab_second'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('second_open_details'));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.bySemanticsIdentifier('second_details'));
+      await context.setLocale(const Locale('en'));
+      await tester.pumpAndSettle();
+      expect(find.text('Home'), findsOneWidget);
+      expect(find.text('Second tab'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('second_details'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('tab_home'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      expect(find.text('Details'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await DependencyProvider.reset();
+    }
+  });
   testWidgets('splash opens the localized home screen through the real DI and router', (tester) async {
     MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
     await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
@@ -82,7 +177,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
     await DependencyProvider.reset();
   });
-  testWidgets('iOS also opens the localized home screen on a Flutter Material page', (tester) async {
+  testWidgets('iOS opens the themed localized home screen on a Cupertino page', (tester) async {
     final originalPlatform = debugDefaultTargetPlatformOverride;
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
     try {
@@ -92,7 +187,7 @@ void main() {
       expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
       expect(find.text('Спільні витрати'), findsOneWidget);
       final context = tester.element(find.bySemanticsIdentifier('home_title'));
-      expect(ModalRoute.of(context)?.settings, isA<MaterialPage<void>>());
+      expect(ModalRoute.of(context)?.settings, isA<CupertinoPage<void>>());
       expect(tester.takeException(), isNull);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
@@ -154,4 +249,13 @@ class _GatedInitializer implements ApplicationInitializer {
 class _FailingInitializer implements ApplicationInitializer {
   @override
   Future<void> initialize() async => throw StateError('Initialization failed');
+}
+
+class _BlockingInitializer implements ApplicationInitializer {
+  final release = Completer<void>();
+  @override
+  Future<void> initialize() async {
+    await release.future;
+    DependencyProvider.get<StartupStatus>().markReady();
+  }
 }

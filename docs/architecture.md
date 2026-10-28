@@ -14,8 +14,9 @@ Dart workspace зі спільним `pubspec.lock`, версії залежно
 | `packages/core/` | DI-фасад get_it, EnvironmentType, Failure, API та preferences обгортки, безпечна аналітика, готовність запуску |
 | `packages/ui_kit/` | AppThemeProvider, context.colors/texts/icons, спільний індикатор, згенеровані SVG-assets |
 | `packages/common/` | Збирання DI, ApplicationInitializer, SafeCubitWrapper, українська/англійська локалізація |
-| `packages/router/` | Типізовані маршрути `/splash`, `/home`, Flutter MaterialPage на Android/iOS, навігаційні розширення |
+| `packages/router/` | Типізовані маршрути splash і двох вкладок, окремі Navigator та навігаційні розширення |
 | `features/splash_feature/` | Перевірка готовності, loading/loaded/failed, повтор після помилки та перехід на home |
+| `features/main_shell_feature/` | Оболонка двох вкладок, порожні сторінки та data/domain/ui-resolver-и |
 | `features/home_feature/` | Наявний стартовий екран, стан і подія відкриття; фінансових функцій немає |
 | `envs/` | Безпечні dev/prod приклади; приватні конфігурації ігноруються Git |
 | `tools/` | Команди workspace, codegen, локалізація, форматування, аналіз і тести |
@@ -124,7 +125,7 @@ Dev має окремий application/bundle id із суфіксом `.dev`. EN
 CrashReportingService локально записує тип помилки, стек і fatal, не повідомлення довільного винятку.
 
 Мережевий клієнт і preferences — обгортки без активних серверних запитів чи фінансових даних.
-ObjectBox, DTO/json_serializable, вкладки StatefulShellRoute та бізнес-модулі додаються з першим
+ObjectBox, DTO/json_serializable та бізнес-модулі додаються з першим
 погодженим сценарієм, коли є відповідні дані/API/вкладки. Це не реалізовані можливості оболонки.
 
 ## Базова тема ui_kit
@@ -141,7 +142,7 @@ provider має пріоритет; звернення без provider заве�
 `context.icons` збережено для поточної кнопки повтору. Нові кольори й стилі додаються в ui_kit,
 а не задаються окремо на кожному екрані.
 
-Home/Splash та їхні сторінки маршрутів використовують Flutter Material. Локалізаційні делегати
+Віджети Home/Splash використовують Flutter Material; сторінки маршрутів — SDK MaterialPage / CupertinoPage. Локалізаційні делегати
 тепер беруться з SDK flutter_localizations і easy_localization, включно з українською.
 Прямі залежності material_ui/cupertino_ui видалені з усіх workspace pubspec; go_router 18.1.0
 усе ще залежить від них транзитивно. Його версію для цієї задачі не змінюємо.
@@ -188,3 +189,41 @@ crash-логи локальні в обох середовищах. Жодног
 7. Оновити цей документ, README й команди при зміні структури. Подати PR у develop.
 
 Команди встановлення, запуску й усіх перевірок — у [README](../README.md).
+
+## Оболонка вкладок і маршрути
+
+GoRouterConfig.config створює router з initialLocation: /splash. App читає config один раз
+і викликає dispose. Ключі root, home та second Navigator визначені в GoRouterConfig;
+кожна TypedStatefulShellBranch посилається на свій ключ.
+MainShellRoute оголошений через @TypedStatefulShellRoute й використовує стандартний IndexedStack.
+MainShellPage отримує child, currentIndex та callback, а router викликає goBranch без скидання
+initialLocation. Перемикання, зокрема повторний вибір активної вкладки, зберігає її стек.
+
+Після успішної ініціалізації splash викликає context.goTo(const HomeRoute()) — go замінює
+маршрут, тому Back із кореня вкладки не відкриває splash. Окремого native splash не додано.
+Перша вкладка /home зберігає стартовий HomePage, друга /second містить порожній екран.
+Маршрути /home/details і /second/details — порожні сторінки для перевірки вкладених стеків,
+не реалізовані сценарії витрат. Кнопки відкривають їх через context.pushTo; Back закриває
+сторінку тільки в активному Navigator. Стан не відновлюється після завершення процесу.
+
+buildPlatformPage повертає Flutter SDK MaterialPage на Android та CupertinoPage на iOS,
+як у довіднику. Це змінює лише тип переходів: віджети, AppTheme.main(), кольори й тексти
+залишаються стандартними Flutter Material. Зовнішні material_ui/cupertino_ui не повертаються.
+Тонкі обгортки context.pushTo/goTo делегують згенерованим push/go, без перевірок типів route.
+Фіча main_shell_feature не імпортує інші фічі та отримує callbacks від router.
+Решта feature DI як і раніше реєструється в common у порядку data → domain → ui.
+
+Генерація після зміни routes (із packages/router):
+
+~~~sh
+fvm dart run build_runner build --force-jit
+~~~
+
+Перевірка вручну: splash → перша вкладка → «Відкрити деталі» → друга вкладка →
+«Відкрити деталі» → перша вкладка (її деталі збережені) → Back → друга вкладка
+(її деталі збережені) → Back. Із кореня вкладки Back не має відкривати splash.
+Тести mobile також перевіряють зміну мови без втрати обох стеків.
+
+Ця гілка включає незлиті зміни теми, локалізації та ініціалізації з PR #14–#16.
+Їхні конфлікти узгоджені; перевірки виконуються для спільного результату.
+PR навігації слід зливати після попередніх PR та повторної перевірки актуального develop.

@@ -10,6 +10,7 @@ workspace:
   - packages/common
   - packages/router
   - features/splash_feature
+  - features/main_shell_feature
   - features/home_feature
   - mobile
 dependencies:

@@ -1,13 +1,14 @@
 # Tricount — Спільні витрати
 
 Flutter-застосунок для Android/iOS. Реалізована базова оболонка: splash із перевіркою
-готовності та повтором після помилки, стартовий екран, українська/англійська локалізація.
+готовності та повтором після помилки, стартовий екран, дві вкладки з незалежними стеками,
+українська/англійська локалізація.
 Облік витрат, групи, баланси та синхронізація ще не реалізовані.
 
 ## Структура
 
 Dart workspace: `mobile/`, `packages/{core,ui_kit,common,router}/`,
-`features/{splash_feature,home_feature}/`. Залежності узгоджуються одним root `pubspec.lock`.
+`features/{splash_feature,home_feature,main_shell_feature}/`. Залежності узгоджуються одним root `pubspec.lock`.
 [Поточна архітектура](docs/architecture.md) пояснює пакети, шари, залежності та додавання фіч.
 [Довідник Inspiro](docs/inspiro-architecture-guide.md) — джерело рішень;
 [план Tricount](docs/tricount-architecture.md) — майбутні продуктові модулі.
@@ -57,6 +58,7 @@ Workspace member — пакет із власним `pubspec.yaml`, зареєс
 | `mobile/` | `mobile` |
 | `features/splash_feature/` | `splash_feature` |
 | `features/home_feature/` | `home_feature` |
+| `features/main_shell_feature/` | `main_shell_feature` |
 
 Кожен учасник має `resolution: workspace` і `publish_to: 'none'`. Версії зовнішніх залежностей
 обмежуються в кореневому `pubspec.yaml`, учасники перелічують потрібні пакети без версій.
@@ -270,3 +272,20 @@ await ApplicationInitializer.initialize() (обробники помилок, г
 Нові Cubit успадковують SafeCubitWrapper, який ігнорує emit після close.
 Порядок підключення нової фічі та життєвий цикл обробників описані в
 [архітектурі](docs/architecture.md).
+
+## Навігація вкладок
+
+Після ініціалізації /splash замінюється на /home. Дві вкладки зберігають незалежні
+стеки через типізований StatefulShellRoute; друга вкладка — порожня оболонка.
+«Відкрити деталі» в кожній вкладці веде на порожню вкладену сторінку для перевірки
+push/Back і збереження стеків. Фінансової логіки в цих сторінках немає.
+Тема та en/uk локалізація застосовуються до обох вкладок.
+Матеріальні віджети використовують MaterialPage на Android і SDK CupertinoPage на iOS.
+
+Після зміни routes з packages/router виконайте:
+
+~~~sh
+fvm dart run build_runner build --force-jit
+~~~
+
+Ручний сценарій перемикання й Back — у [документації навігації](docs/architecture.md#оболонка-вкладок-і-маршрути).

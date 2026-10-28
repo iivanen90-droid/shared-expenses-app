@@ -6,7 +6,7 @@
 
 ## Архітектурні правила
 
-- Workspace реалізований: mobile, core, ui_kit, common, router, splash_feature, home_feature.
+- Workspace реалізований: mobile, core, ui_kit, common, router, splash_feature, home_feature, main_shell_feature.
   Фінансових функцій ще немає. Не переносити редактор, покупки чи інтеграції Inspiro.
 - Core та ui_kit — незалежні від інших пакетів workspace. Фіча не імпортує іншу фічу.
   Доступ до чужих пакетів лише через публічний barrel, не через `src/`.
@@ -15,10 +15,10 @@
 - Cubit успадковує SafeCubitWrapper. Один freezed-state зі status enum. Page створює Cubit через DI.
 - До runApp очікувати ApplicationInitializer.initialize(): обробники помилок і готовність preferences.
 - Три DI-resolver кожної фічі реєструються в common після core у порядку data → domain → ui.
-- Routes типізовані в router. Початок — splash; на цьому етапі всі сторінки — Flutter MaterialPage.
-  StatefulShellRoute додавати, коли погоджені вкладки. Не вигадувати вкладки або бізнес-екрани.
+- Routes типізовані в router. Початок — splash; buildPlatformPage використовує SDK MaterialPage / CupertinoPage за платформою.
+  StatefulShellRoute вже містить дві вкладки з окремими стеками. Не додавати бізнес-екрани поза завданням.
 - UI — стандартний `package:flutter/material.dart`; тема — AppThemeProvider і context.colors/texts/icons.
-  За новим етапом material_ui, cupertino_ui та окремі Cupertino-екрани не використовуються.
+  За новим етапом material_ui, cupertino_ui не використовуються; CupertinoPage задає лише iOS-перехід для Material-віджетів.
   Стандартний шрифт Flutter, без font assets. Рядки — LocaleKeys, easy_localization; assets — flutter_gen.
 - Either<Failure,T>, обробка винятків у data/domain. DTO/json_serializable та ObjectBox додаються,
   коли є погоджений API чи структуровані дані. Не додавати порожні мережеві/БД сценарії.
