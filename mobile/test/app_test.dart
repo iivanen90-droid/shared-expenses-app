@@ -2,16 +2,18 @@ import 'dart:convert';
 import 'dart:async';
 
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:common/common.dart';
 import 'package:core/core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:mobile/app.dart';
 import 'package:mobile/main_common.dart' as bootstrap;
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
+import 'package:ui_kit/ui_kit.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -71,12 +73,32 @@ void main() {
     expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
     expect(find.text('Спільні витрати'), findsOneWidget);
     final context = tester.element(find.bySemanticsIdentifier('home_title'));
+    expect(Theme.of(context).colorScheme.primary, context.colors.primary);
+    expect(tester.widget<Text>(find.text('Спільні витрати')).style, context.texts.title);
     await context.setLocale(const Locale('en'));
     await tester.pumpAndSettle();
     expect(find.text('Shared expenses'), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
     await DependencyProvider.reset();
+  });
+  testWidgets('iOS also opens the localized home screen on a Flutter Material page', (tester) async {
+    final originalPlatform = debugDefaultTargetPlatformOverride;
+    debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
+    try {
+      MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+      await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      expect(find.text('Спільні витрати'), findsOneWidget);
+      final context = tester.element(find.bySemanticsIdentifier('home_title'));
+      expect(ModalRoute.of(context)?.settings, isA<MaterialPage<void>>());
+      expect(tester.takeException(), isNull);
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await DependencyProvider.reset();
+      debugDefaultTargetPlatformOverride = originalPlatform;
+    }
   });
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
     final status = StartupStatusImpl();
