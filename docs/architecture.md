@@ -260,3 +260,42 @@ async-помилку в debug, перевірити канал tricount.errors �
 iOS native запуск потребує macOS/Xcode; widget-тест із платформою iOS його не замінює.
 Flutter може ігнорувати orientation lock на iPad із multitasking та Android 16 на великих
 дисплеях; конфігурацію multitasking цим етапом не змінюємо.
+
+## Мережевий клієнт core
+
+DioClient реалізує ApiClient для майбутніх data/source-сервісів. Публічний core.dart
+експортує обидва типи, DioClientConfiguration, ApiError/ApiErrorKind і потрібні
+CancelToken/Interceptor/InterceptorsWrapper. Dio вже був у core та root pubspec;
+версія й lockfile цим етапом не оновлюються.
+
+Конфігурація передається у конструктор, CoreDependenciesModuleResolver.register
+або MainDependenciesModuleResolver.register через dioConfiguration:
+baseUrl, connectTimeout (15 с), sendTimeout (30 с), receiveTimeout (30 с) та headers.
+Таймаути мають бути додатніми; непорожній baseUrl — абсолютний HTTP(S) URL.
+Клієнт копіює мапу заголовків; заголовки окремого запиту не змінюють налаштування наступних.
+Адреса бекенду поки не визначена: типовий baseUrl порожній, жодних запитів при старті немає.
+Відносний запит без базової адреси повертає Left(ApiErrorKind.configuration) без транспорту;
+абсолютний HTTP(S) URL можна передати явно. Реальних endpoints і бізнес-сервісів не додано.
+
+Доступні get/post/put/patch/delete/head та request із method, data, queryParameters,
+headers, cancelToken і обов'язковим decode(Object?). Метод повертає Future<Either<ApiError,T>>;
+ApiError extends Failure, тому repository може перевести транспортну помилку
+у Failure конкретного сценарію. Right містить результат decoder, Left — безпечний
+kind та, якщо доступний, statusCode. Немає response body, URL, заголовків чи повідомлень винятку в ApiError.
+HTTP-помилки не передаються decoder; помилки JSON/decoder мають kind decoding.
+Мережеві помилки, таймаути, сертифікат, HTTP, скасування й невідомі помилки розрізняються.
+Автоматичних retries, авторизації, refresh token чи прихованих повторів запису немає.
+
+Interceptors можна передати конструктору або додати через addInterceptor.
+Транспортні помилки та помилки decoder передаються наявному CrashReportingService
+з оригінальними error/stackTrace. Локальний writer записує тільки безпечний тип, стек і fatal,
+без request/response payload, URL або заголовків. Скасування не записується як crash.
+Помилка reporter не перетворює Either на необроблений виняток. LogInterceptor автоматично не додається;
+нові interceptors не повинні логувати секрети чи фінансові дані.
+
+Core DI реєструє один lazy DioClient та ApiClient як посилання на той самий екземпляр.
+await DependencyProvider.reset() закриває створений клієнт через close(force: true);
+невикористаний клієнт при reset не створюється. close ідемпотентний, нові запити після нього
+повертають kind closed. Самостійно створений клієнт закриває його власник.
+ApiClientImpl(dio: ...) збережений як сумісний конструктор для попереднього API;
+для нового коду потрібні DioClientConfiguration та ін'єкція CrashReportingService.

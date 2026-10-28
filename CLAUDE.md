@@ -21,6 +21,8 @@
 - UI — стандартний `package:flutter/material.dart`; тема — AppThemeProvider і context.colors/texts/icons.
   За новим етапом material_ui, cupertino_ui не використовуються; CupertinoPage задає лише iOS-перехід для Material-віджетів.
   Стандартний шрифт Flutter, без font assets. Рядки — LocaleKeys, easy_localization; assets — flutter_gen.
+- HTTP у data/source — через ApiClient / DioClient з core, з decode та Either<ApiError,T>.
+  Не логувати URL, headers або payload; не додавати приховані retries записів. Конфігурація — ззовні.
 - Either<Failure,T>, обробка винятків у data/domain. DTO/json_serializable та ObjectBox додаються,
   коли є погоджений API чи структуровані дані. Не додавати порожні мережеві/БД сценарії.
 - Аналітика через клас екрана з Cubit; жодних фінансових/персональних payload і повідомлень винятків у логах.

@@ -295,3 +295,16 @@ fvm dart run build_runner build --force-jit
 Успішно підготовлений запуск не викликається повторно на splash.
 Чекліст ручного запуску й перевірки локального журналу помилок —
 [в архітектурі](docs/architecture.md#оболонка-mobile-і-старт).
+
+## Майбутні API-запити
+
+У core є DioClient із GET/POST/PUT/PATCH/DELETE/HEAD, конфігурованими baseUrl,
+таймаутами й headers. Конфігурацію можна передати через dioConfiguration до
+MainDependenciesModuleResolver.register. Інтерфейс ApiClient та DioClient у DI
+посилаються на один lazy singleton. Результат — Either<ApiError,T>, де ApiError є Failure.
+Перетворення даних виконує переданий decode, а бізнес-помилки визначатиме відповідна фіча.
+
+Адресу сервера й endpoints ще не налаштовано, застосунок не виконує API-запитів при старті.
+Мережеві тести працюють лише з підставним HttpClientAdapter без інтернет-запитів.
+Налаштування, interceptor-и, логування та очищення — у
+[документації клієнта](docs/architecture.md#мережевий-клієнт-core).
