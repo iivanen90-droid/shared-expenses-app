@@ -28,7 +28,23 @@ Dart workspace зі спільним `pubspec.lock`, версії залежно
 core, router, ui_kit. Зв'язки common ↔ feature ↔ router відповідають довіднику; чужий `src/` заборонений.
 Прямі імпорти feature → feature заборонені. Спільні контракти надалі додаються в core.
 
-Запуск: binding → EasyLocalization → DI (core, data → domain → ui) → App → splash → ApplicationInitializer. Помилка ініціалізації проходить через repository до стану splash; кнопка повтору знову виконує ініціалізацію.
+Запуск: binding → DI (core, потім data → domain → ui кожної фічі) →
+await ApplicationInitializer.initialize() → EasyLocalization → runApp → splash → home.
+Ініціалізатор встановлює обробники помилок і очікує готовності preferences до runApp.
+Паралельні виклики ділять один Future; після успіху повторна підготовка не виконується.
+При помилці підготовки запуск записує її в локальний CrashReportingService та відкриває
+оболонку відновлення: splash повторює ініціалізацію через repository, а при повторній
+невдачі показує кнопку повтору. StartupStatus стає ready лише після успіху.
+
+ApplicationInitializer — контракт у core, також експортований через common.dart.
+MainDependenciesModuleResolver реєструє реалізацію як lazy singleton; reset DI звільняє
+її та відновлює попередні глобальні обробники, якщо вони ще належать цьому екземпляру.
+FlutterError.onError передає помилку та стек у CrashReportingService з fatal: false,
+після чого викликає попередній Flutter-обробник. PlatformDispatcher.onError перехоплює
+необроблені async-помилки головного isolate з fatal: true і зберігає результат попереднього
+обробника, якщо він є. Без попереднього обробника повертає успішність локального логування.
+Помилка самого reporter не створює рекурсивного звіту. Помилки окремих isolate потрібно
+передавати окремо; зовнішні SDK не підключені.
 Splash: `Page → Cubit → StartupInteractor → StartupRepository → StartupSource → StartupStatus`.
 Результат — `Either<Failure, Unit>`; помилки перетворюються на Failure. Після успіху типізований маршрут
 замінює splash на home. Сторінки самі створюють Cubit через BlocProvider і DependencyProvider.
@@ -79,11 +95,14 @@ Home поки не потребує repository/interactor; його data/domain-
 споживача й за потреби перетворює на Failure.
 
 `WidgetsFlutterBinding.ensureInitialized()` викликається в mobile до реєстрації DI;
-нативний Flutter-registrant підключає плагін. Async API не потребує попереднього
-`SharedPreferences.getInstance()` чи окремого кешу: клієнт створюється при першому отриманні
-сервісу, доступ до платформи виконується асинхронними методами. У тестах перед отриманням
-сервісу встановлюється офіційний in-memory async backend; у production він не використовується.
-`shared_preferences_platform_interface` — лише пряма test-залежність core з версією в root.
+нативний Flutter-registrant підключає плагін. ApplicationInitializer очікує
+PreferencesStorage.initialize(): одноразовий read-only getKeys перевіряє доступ до платформи,
+не записуючи бізнес-ключів. Конкурентні звернення очікують спільний Future; після помилки
+можна повторити підготовку. Усі читання, записи та remove також очікують initialize(),
+тому прямий споживач не обходить підготовку. Значення не кешуються.
+SharedPreferences.getInstance() для async API не потрібний.
+У тестах використовується офіційний in-memory async backend;
+shared_preferences_platform_interface — test-залежність core та mobile з версією в root.
 
 Сховище призначене для некритичних налаштувань, а не фінансових записів чи секретів.
 Обгортка не додає бізнес-ключів, не логує ключі/значення та не змінює сховище локалізації
