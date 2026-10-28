@@ -29,8 +29,9 @@ Dart workspace зі спільним `pubspec.lock`, версії залежно
 core, router, ui_kit. Зв'язки common ↔ feature ↔ router відповідають довіднику; чужий `src/` заборонений.
 Прямі імпорти feature → feature заборонені. Спільні контракти надалі додаються в core.
 
-Запуск: binding → DI (core, потім data → domain → ui кожної фічі) →
-await ApplicationInitializer.initialize() → EasyLocalization → runApp → splash → home.
+Запуск: binding → ensureSemantics лише в debug → await EasyLocalization.ensureInitialized() →
+await SystemChrome.setPreferredOrientations([portraitUp]) → DI (core, потім data → domain → ui кожної фічі) →
+await ApplicationInitializer.initialize() → runApp(LocalizationsWrapper(child: App())) → splash → вкладки.
 Ініціалізатор встановлює обробники помилок і очікує готовності preferences до runApp.
 Паралельні виклики ділять один Future; після успіху повторна підготовка не виконується.
 При помилці підготовки запуск записує її в локальний CrashReportingService та відкриває
@@ -227,3 +228,35 @@ fvm dart run build_runner build --force-jit
 Ця гілка включає незлиті зміни теми, локалізації та ініціалізації з PR #14–#16.
 Їхні конфлікти узгоджені; перевірки виконуються для спільного результату.
 PR навігації слід зливати після попередніх PR та повторної перевірки актуального develop.
+
+## Оболонка mobile і старт
+
+main.dart містить лише вибір EnvironmentType та виклик асинхронного run із main_common.dart.
+Debug semantics вмикаються один раз на час життя застосунку; у release цього виклику немає.
+Локалізація ініціалізується перед portraitUp, а завершення платформного запиту орієнтації
+очікується перед реєстрацією DI. MainDependenciesModuleResolver.register наразі синхронний;
+якщо він стане асинхронним, його Future потрібно очікувати перед ApplicationInitializer.
+
+run очікує initializer до створення дерева App. Успішний initializer позначає StartupStatus ready;
+splash лише перевіряє цей стан і через go переходить до вкладок, без повторної ініціалізації.
+Наявне відновлення після невдалої підготовки preferences збережене: лише за відсутності ready
+splash може повторити невдалу спробу й показати явну кнопку повтору.
+AppThemeProvider обгортає MaterialApp.router; один router живе до dispose App,
+поточні localizationDelegates/supportedLocales/locale оновлюють UI без створення нового router.
+
+FlutterError.onError і PlatformDispatcher.onError встановлюються виключно в
+ApplicationInitializer; main_common не створює дубльованих обробників.
+CrashReportingService отримує оригінальні error/stackTrace; локальний writer записує
+безпечний тип помилки, стек і fatal. Зовнішніх crash SDK немає.
+Для ручної перевірки можна тимчасово викликати FlutterError.reportError або незловлену
+async-помилку в debug, перевірити канал tricount.errors і видалити виклик до коміту.
+Для перевірки через VM service зміни джерел узагалі не потрібні.
+
+Ручний чекліст для Android та iOS:
+1. Запустити dev flavor: початкова ініціалізація завершується перед splash → вкладки.
+2. Переконатися в портретній орієнтації, перевірити uk та en через локалізаційний контекст.
+3. Викликати навмисну framework/async-помилку та перевірити error/stack/fatal у tricount.errors.
+4. Перевірити, що після тесту не залишилося викликів помилок у джерелах.
+iOS native запуск потребує macOS/Xcode; widget-тест із платформою iOS його не замінює.
+Flutter може ігнорувати orientation lock на iPad із multitasking та Android 16 на великих
+дисплеях; конфігурацію multitasking цим етапом не змінюємо.

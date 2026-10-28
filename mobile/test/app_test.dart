@@ -4,7 +4,7 @@ import 'package:router/router.dart';
 import 'dart:convert';
 import 'dart:async';
 
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, SystemChannels, MethodCall;
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:common/common.dart';
 import 'package:core/core.dart';
@@ -40,24 +40,47 @@ void main() {
     await DependencyProvider.reset();
     SharedPreferencesAsyncPlatform.instance = previousPlatform;
   });
-  test('bootstrap awaits initialization before handing the widget to runApp', () async {
+  test('bootstrap awaits portrait lock before DI and initializer before runApp', () async {
+    final orientationRequested = Completer<void>();
+    final allowOrientation = Completer<void>();
     final initializer = _GatedInitializer();
     var appStarted = false;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (MethodCall call) async {
+        if (call.method == 'SystemChrome.setPreferredOrientations') {
+          expect(call.arguments, ['DeviceOrientation.portraitUp']);
+          orientationRequested.complete();
+          await allowOrientation.future;
+        }
+        return null;
+      },
+    );
     final launch = bootstrap.run(
       environment: EnvironmentType.dev,
       initializer: initializer,
       appRunner: (_) => appStarted = true,
     );
     try {
+      await orientationRequested.future;
+      expect(DependencyProvider.isRegistered<ApplicationInitializer>(), isFalse);
+      expect(initializer.started.isCompleted, isFalse);
+      expect(appStarted, isFalse);
+      allowOrientation.complete();
       await initializer.started.future;
+      expect(DependencyProvider.isRegistered<ApplicationInitializer>(), isTrue);
       expect(appStarted, isFalse);
     } finally {
+      if (!allowOrientation.isCompleted) allowOrientation.complete();
       initializer.release.complete();
       await launch;
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      );
     }
     expect(appStarted, isTrue);
   });
-
   test('bootstrap leaves a recovery UI available after initialization fails', () async {
     Widget? root;
     await bootstrap.run(
@@ -95,6 +118,42 @@ void main() {
     }
   });
 
+  testWidgets('bootstrap initializes once before splash and tabs on Android and iOS', (tester) async {
+    final originalPlatform = debugDefaultTargetPlatformOverride;
+    try {
+      for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+        debugDefaultTargetPlatformOverride = platform;
+        final initializer = _CountingInitializer();
+        Widget? root;
+        await tester.runAsync(
+          () => bootstrap.run(
+            environment: EnvironmentType.dev,
+            initializer: initializer,
+            appRunner: (widget) => root = widget,
+          ),
+        );
+        expect(initializer.calls, 1);
+        expect(root, isA<LocalizationsWrapper>());
+        await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
+        await tester.pumpAndSettle();
+        expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+        expect(find.byType(NavigationBar), findsOneWidget);
+        expect(initializer.calls, 1);
+        final context = tester.element(find.bySemanticsIdentifier('home_title'));
+        expect(Theme.of(context).colorScheme.primary, context.colors.primary);
+        await context.setLocale(const Locale('en'));
+        await tester.pumpAndSettle();
+        expect(find.text('Shared expenses'), findsOneWidget);
+        expect(initializer.calls, 1);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await DependencyProvider.reset();
+      }
+    } finally {
+      await tester.pumpWidget(const SizedBox.shrink());
+      await DependencyProvider.reset();
+      debugDefaultTargetPlatformOverride = originalPlatform;
+    }
+  });
   testWidgets('both tabs preserve independent stacks including repeated tab selection', (tester) async {
     MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
     try {
@@ -256,6 +315,15 @@ class _BlockingInitializer implements ApplicationInitializer {
   @override
   Future<void> initialize() async {
     await release.future;
+    DependencyProvider.get<StartupStatus>().markReady();
+  }
+}
+
+class _CountingInitializer implements ApplicationInitializer {
+  int calls = 0;
+  @override
+  Future<void> initialize() async {
+    calls++;
     DependencyProvider.get<StartupStatus>().markReady();
   }
 }

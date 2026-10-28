@@ -266,9 +266,9 @@ node --test .github/tests/codex-review.test.cjs
 Прямі push, force push, видалення develop і обхід захисту адміністраторами заборонені.
 Правила агента — [AGENTS.md](AGENTS.md), порядок розробки — [CLAUDE.md](CLAUDE.md).
 
-Старт застосунку: Flutter binding → реєстрація core і фіч у DI →
-await ApplicationInitializer.initialize() (обробники помилок, готовність preferences) →
-локалізація → runApp. При помилці preferences доступне відновлення через splash.
+Старт застосунку: Flutter binding → debug semantics → локалізація → await portraitUp →
+реєстрація core і фіч у DI → await ApplicationInitializer.initialize()
+(обробники помилок, готовність preferences) → runApp. При помилці preferences доступне відновлення через splash.
 Нові Cubit успадковують SafeCubitWrapper, який ігнорує emit після close.
 Порядок підключення нової фічі та життєвий цикл обробників описані в
 [архітектурі](docs/architecture.md).
@@ -289,3 +289,9 @@ fvm dart run build_runner build --force-jit
 ~~~
 
 Ручний сценарій перемикання й Back — у [документації навігації](docs/architecture.md#оболонка-вкладок-і-маршрути).
+
+Оболонка mobile очікує локалізацію та portraitUp перед DI, а готовність preferences —
+перед runApp. Глобальні обробники підключає лише ApplicationInitializer.
+Успішно підготовлений запуск не викликається повторно на splash.
+Чекліст ручного запуску й перевірки локального журналу помилок —
+[в архітектурі](docs/architecture.md#оболонка-mobile-і-старт).
