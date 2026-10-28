@@ -27,9 +27,10 @@ void main() {
     final source = _Source();
     final reporting = _CrashReporting();
     final error = StateError('storage is unavailable');
-    when(source.isReady).thenThrow(error);
+    final stackTrace = StackTrace.fromString('startup source');
+    when(source.isReady).thenAnswer((_) => Future<bool>.error(error, stackTrace));
     final repository = StartupRepositoryImpl(source: source, crashReporting: reporting);
     expect((await repository.checkReadiness()).isLeft(), isTrue);
-    verify(() => reporting.report(error: error)).called(1);
+    verify(() => reporting.recordError(error, stackTrace)).called(1);
   });
 }

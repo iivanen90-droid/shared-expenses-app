@@ -12,8 +12,8 @@ final class StartupRepositoryImpl implements StartupRepository {
     try {
       if (await _source.isReady()) return const Right(unit);
       return const Left(StartupFailure());
-    } on Object catch (error) {
-      _crashReporting.report(error: error);
+    } on Object catch (error, stackTrace) {
+      _crashReporting.recordError(error, stackTrace);
       return const Left(StartupFailure());
     }
   }
