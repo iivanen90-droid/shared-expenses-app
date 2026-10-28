@@ -92,8 +92,8 @@ Home поки не потребує repository/interactor; його data/domain-
 ## UI, генерація та середовища
 
 UI імпортується з material_ui / cupertino_ui. Стилі — через AppThemeProvider і context-розширення;
-рядки — через згенеровані LocaleKeys та easy_localization. Українська — стартова й резервна мова,
-англійська доступна через локалізаційний контекст. Екрану зміни мови ще немає.
+рядки — через згенеровані LocaleKeys та easy_localization. Підтримуються en/uk: збережена або підтримувана системна мова;
+англійська — fallback для непідтримуваної мови та відсутнього перекладу. Екрану зміни мови ще немає.
 Стани — один freezed-клас зі status enum. Routes — go_router_builder. Assets — flutter_gen.
 Генеровані файли комітяться, вручну їх не змінюємо.
 

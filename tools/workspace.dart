@@ -71,6 +71,8 @@ Future<void> main(List<String> args) async {
         'easy_localization:generate',
         '-S',
         'lib/src/localization/langs',
+        '-s',
+        'en.json',
         '-O',
         'lib/src/localization',
         '-f',

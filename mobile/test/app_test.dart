@@ -21,7 +21,7 @@ void main() {
     translations = _TranslationsLoader(data);
   });
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'locale': 'uk'});
     await EasyLocalization.ensureInitialized();
   });
   tearDown(DependencyProvider.reset);
