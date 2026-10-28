@@ -14,7 +14,7 @@ Dart workspace зі спільним `pubspec.lock`, версії залежно
 | `packages/core/` | DI-фасад get_it, EnvironmentType, Failure, API та preferences обгортки, безпечна аналітика, готовність запуску |
 | `packages/ui_kit/` | AppThemeProvider, context.colors/texts/icons, спільний індикатор, згенеровані SVG-assets |
 | `packages/common/` | Збирання DI, ApplicationInitializer, SafeCubitWrapper, українська/англійська локалізація |
-| `packages/router/` | Типізовані маршрути `/splash`, `/home`, сторінки Android/iOS, навігаційні розширення |
+| `packages/router/` | Типізовані маршрути `/splash`, `/home`, Flutter MaterialPage на Android/iOS, навігаційні розширення |
 | `features/splash_feature/` | Перевірка готовності, loading/loaded/failed, повтор після помилки та перехід на home |
 | `features/home_feature/` | Наявний стартовий екран, стан і подія відкриття; фінансових функцій немає |
 | `envs/` | Безпечні dev/prod приклади; приватні конфігурації ігноруються Git |
@@ -91,7 +91,9 @@ Home поки не потребує repository/interactor; його data/domain-
 
 ## UI, генерація та середовища
 
-UI імпортується з material_ui / cupertino_ui. Стилі — через AppThemeProvider і context-розширення;
+За вимогою етапу базової теми UI імпортується зі стандартного `package:flutter/material.dart`.
+Попереднє рішення довідника про material_ui/cupertino_ui замінено; власних Cupertino-сторінок немає.
+Стилі — через AppThemeProvider і context-розширення;
 рядки — через згенеровані LocaleKeys та easy_localization. Українська — стартова й резервна мова,
 англійська доступна через локалізаційний контекст. Екрану зміни мови ще немає.
 Стани — один freezed-клас зі status enum. Routes — go_router_builder. Assets — flutter_gen.
@@ -106,6 +108,25 @@ CrashReportingService локально записує тип помилки, с�
 Мережевий клієнт і preferences — обгортки без активних серверних запитів чи фінансових даних.
 ObjectBox, DTO/json_serializable, вкладки StatefulShellRoute та бізнес-модулі додаються з першим
 погодженим сценарієм, коли є відповідні дані/API/вкладки. Це не реалізовані можливості оболонки.
+
+## Базова тема ui_kit
+
+Одна тема `AppTheme.main()` використовує Flutter Material 3 з базовим синім seed.
+`AppColorScheme` надає primary/onPrimary, surface/onSurface/onSurfaceVariant, outline, error/onError.
+`AppTextStyles` містить heading, title, body, label і caption, побудовані зі стандартного TextTheme.
+Файлів шрифтів і fontFamily override немає; використовується стандартна типографіка Flutter.
+
+`AppThemeProvider` — InheritedWidget, який у mobile обгортає `MaterialApp.router`.
+`theme.material` задається в MaterialApp, а споживачі читають `context.colors` та `context.texts`
+через публічний `ui_kit.dart`. Зміна екземпляра теми сповіщає залежні віджети, найближчий
+provider має пріоритет; звернення без provider завершується явним StateError.
+`context.icons` збережено для поточної кнопки повтору. Нові кольори й стилі додаються в ui_kit,
+а не задаються окремо на кожному екрані.
+
+Home/Splash та їхні сторінки маршрутів використовують Flutter Material. Локалізаційні делегати
+тепер беруться з SDK flutter_localizations і easy_localization, включно з українською.
+Прямі залежності material_ui/cupertino_ui видалені з усіх workspace pubspec; go_router 18.1.0
+усе ще залежить від них транзитивно. Його версію для цієї задачі не змінюємо.
 
 ## Аналітика та логування помилок
 
