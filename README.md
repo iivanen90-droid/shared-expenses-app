@@ -102,6 +102,14 @@ dependencies:
    `fvm dart tools/workspace.dart check`. Для фіч із codegen перед перевіркою виконайте
    `fvm dart tools/workspace.dart generate`. Комітьте зміни кореневого lockfile разом із pubspec-файлами.
 
+## Базова тема
+
+Застосунок використовує стандартний Flutter Material і одну тему `AppTheme.main()` із ui_kit.
+Кольори доступні через `context.colors`, текстові стилі — через `context.texts`.
+Використовується стандартний шрифт Flutter, власні font assets не підключені.
+За новим етапом прямі material_ui/cupertino_ui залежності прибрано; ці пакети ще присутні
+транзитивно через go_router. Деталі — в [архітектурній документації](docs/architecture.md#базова-тема-ui_kit).
+
 ## Запуск
 
 З кореня перейдіть у `mobile/`:

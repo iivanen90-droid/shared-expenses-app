@@ -1,14 +1,6 @@
-import 'package:material_ui/material_ui.dart';
-
-final class AppColorScheme {
-  const AppColorScheme({required this.primary});
-  final Color primary;
-}
-
-final class AppTextStyles {
-  const AppTextStyles({required this.title});
-  final TextStyle title;
-}
+import 'package:flutter/material.dart';
+import 'package:ui_kit/src/theme/app_color_scheme.dart';
+import 'package:ui_kit/src/theme/app_text_styles.dart';
 
 final class AppIcons {
   const AppIcons();
@@ -18,11 +10,12 @@ final class AppIcons {
 final class AppTheme {
   const AppTheme({required this.material, required this.colors, required this.texts, required this.icons});
   factory AppTheme.main() {
-    final material = ThemeData(colorSchemeSeed: const Color(0xFF1976D2));
+    final scheme = ColorScheme.fromSeed(seedColor: const Color(0xFF1976D2));
+    final material = ThemeData(useMaterial3: true, colorScheme: scheme, scaffoldBackgroundColor: scheme.surface);
     return AppTheme(
       material: material,
-      colors: AppColorScheme(primary: material.colorScheme.primary),
-      texts: AppTextStyles(title: material.textTheme.titleMedium ?? const TextStyle()),
+      colors: AppColorScheme.fromMaterial(material.colorScheme),
+      texts: AppTextStyles.fromMaterial(material.textTheme),
       icons: const AppIcons(),
     );
   }
