@@ -41,6 +41,7 @@ fvm dart tools/workspace.dart generate
 fvm dart tools/workspace.dart check
 ```
 
+Якщо змінюються лише переклади, достатньо `bash tools/tr_keys_gen.sh` або команди без Bash із README.
 Build_runner виконується з пакета-власника. Тести запускаються в кожному пакеті.
 Команди dev/prod та Android build наведені в README. iOS потребує macOS/Xcode;
 недоступні перевірки зазначати явно. Не комітити SDK paths, секрети, build або приватні envs.

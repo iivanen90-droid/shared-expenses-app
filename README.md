@@ -151,6 +151,34 @@ feature-пакетах, звідки запускається генератор
 `dart format` у workspace-команді застосовує спільну ширину 120 до згенерованого коду.
 Локальні SDK, build/cache-каталоги та налаштування IDE виключені через `.gitignore`.
 
+## Локалізація en / uk
+
+`packages/common/lib/src/localization/langs/en.json` та `uk.json` містять однакові ключі.
+Шлях зареєстрований у assets пакета common, wrapper використовує пакетний префікс
+`packages/common/lib/src/localization/langs`. `common.dart` експортує LocalizationsWrapper,
+AppLocalizationContext та згенеровані LocaleKeys.
+
+Після `WidgetsFlutterBinding.ensureInitialized()` mobile викликає
+`await EasyLocalization.ensureInitialized()`, а потім обгортає App у LocalizationsWrapper.
+Збережена мова має пріоритет; без неї обирається підтримувана системна мова.
+Для непідтримуваної мови та відсутнього перекладу використовується англійська (`en`).
+MaterialApp отримує delegates, supportedLocales та поточний `context.locale`, тому
+`await context.setLocale(const Locale('uk'))` або Locale('en') оновлює інтерфейс і зберігає вибір.
+Окремого екрана вибору мови поки немає.
+
+Щоб додати переклад, додайте той самий ключ і непорожній текст до обох JSON, потім з кореня
+запустіть `bash tools/tr_keys_gen.sh` (на Windows — у Git Bash). Джерело генерації — en.json;
+`locale_keys.g.dart` не редагується вручну. Без Bash виконайте з packages/common/:
+
+```sh
+fvm dart run easy_localization:generate -S lib/src/localization/langs -s en.json -O lib/src/localization -f keys -o locale_keys.g.dart
+fvm dart format lib/src/localization/locale_keys.g.dart
+```
+
+У UI використовуйте `LocaleKeys.someKey.tr(context: context)`, а не текст чи ключі вручну.
+Після зміни перекладів виконайте `fvm dart tools/workspace.dart check` з кореня.
+Перевірки common звіряють JSON-ключі, відновлення мови, оновлення UI та англійський fallback.
+
 ## Генерація
 
 ```sh
