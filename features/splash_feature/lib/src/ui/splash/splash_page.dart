@@ -2,7 +2,7 @@ import 'package:common/common.dart';
 import 'package:core/core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:router/router.dart';
 import 'package:splash_feature/src/ui/splash/state/splash_cubit.dart';
 import 'package:ui_kit/ui_kit.dart';

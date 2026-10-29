@@ -14,10 +14,11 @@
   Constructor injection — required named параметри, поля приватні. Cubit не викликає repository.
 - Cubit успадковує SafeCubitWrapper. Один freezed-state зі status enum. Page створює Cubit через DI.
 - Три DI-resolver кожної фічі реєструються в common після core у порядку data → domain → ui.
-- Routes типізовані в router. Початок — splash; платформа визначає Material/Cupertino сторінку.
+- Routes типізовані в router. Початок — splash; на цьому етапі всі сторінки — Flutter MaterialPage.
   StatefulShellRoute додавати, коли погоджені вкладки. Не вигадувати вкладки або бізнес-екрани.
-- UI — material_ui/cupertino_ui; тема — AppThemeProvider і context.colors/texts/icons.
-  Рядки — LocaleKeys, easy_localization; assets — flutter_gen. Імпорти Flutter SDK material/cupertino заборонені.
+- UI — стандартний `package:flutter/material.dart`; тема — AppThemeProvider і context.colors/texts/icons.
+  За новим етапом material_ui, cupertino_ui та окремі Cupertino-екрани не використовуються.
+  Стандартний шрифт Flutter, без font assets. Рядки — LocaleKeys, easy_localization; assets — flutter_gen.
 - Either<Failure,T>, обробка винятків у data/domain. DTO/json_serializable та ObjectBox додаються,
   коли є погоджений API чи структуровані дані. Не додавати порожні мережеві/БД сценарії.
 - Аналітика через клас екрана з Cubit; жодних фінансових/персональних payload і повідомлень винятків у логах.

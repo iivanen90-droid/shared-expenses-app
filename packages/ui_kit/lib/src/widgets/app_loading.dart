@@ -1,4 +1,4 @@
-import 'package:material_ui/material_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:ui_kit/src/generated/assets.gen.dart';
 
 class AppLoading extends StatelessWidget {
