@@ -113,8 +113,9 @@ shared_preferences_platform_interface — test-залежність core та mo
 За вимогою етапу базової теми UI імпортується зі стандартного `package:flutter/material.dart`.
 Попереднє рішення довідника про material_ui/cupertino_ui замінено; власних Cupertino-сторінок немає.
 Стилі — через AppThemeProvider і context-розширення;
-рядки — через згенеровані LocaleKeys та easy_localization. Українська — стартова й резервна мова,
-англійська доступна через локалізаційний контекст. Екрану зміни мови ще немає.
+рядки — через згенеровані LocaleKeys та easy_localization. Підтримуються en/uk:
+збережена або підтримувана системна мова; англійська — fallback для непідтримуваної
+мови та відсутнього перекладу. Екрану зміни мови ще немає.
 Стани — один freezed-клас зі status enum. Routes — go_router_builder. Assets — flutter_gen.
 Генеровані файли комітяться, вручну їх не змінюємо.
 

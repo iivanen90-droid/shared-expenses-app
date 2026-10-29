@@ -30,7 +30,7 @@ void main() {
   setUp(() async {
     previousPlatform = SharedPreferencesAsyncPlatform.instance;
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({'locale': 'uk'});
     await EasyLocalization.ensureInitialized();
   });
   tearDown(() async {

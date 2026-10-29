@@ -18,6 +18,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   mocktail:
+  shared_preferences:
 flutter:
   assets:
     - lib/src/localization/langs/
