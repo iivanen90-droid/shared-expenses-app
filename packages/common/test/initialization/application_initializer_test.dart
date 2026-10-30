@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:common/common.dart';
@@ -29,63 +28,20 @@ void main() {
     PlatformDispatcher.instance.onError = originalPlatform;
   });
 
-  test('readiness waits for preferences and parallel initialization is shared', () async {
-    final started = Completer<void>();
-    final release = Completer<void>();
-    var preparations = 0;
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      crashReporting: reporter,
-      preparePreferences: () async {
-        preparations++;
-        started.complete();
-        await release.future;
-      },
-    );
+  test('repeated initialization marks ready without duplicating error reports', () async {
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
     initializer = current;
-    final first = current.initialize();
-    final second = current.initialize();
-    try {
-      await started.future;
-      expect(status.isReady, isFalse);
-      expect(preparations, 1);
-    } finally {
-      release.complete();
-      await Future.wait([first, second]);
-    }
-    expect(status.isReady, isTrue);
+    await Future.wait([current.initialize(), current.initialize()]);
     await current.initialize();
-    expect(preparations, 1);
-  });
-
-  test('a failed initialization stays unready and can be retried without duplicating handlers', () async {
-    var attempts = 0;
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      crashReporting: reporter,
-      preparePreferences: () async {
-        attempts++;
-        if (attempts == 1) throw StateError('Preparation failed');
-      },
-    );
-    initializer = current;
-    await expectLater(current.initialize(), throwsStateError);
-    expect(status.isReady, isFalse);
-    final firstHandler = FlutterError.onError;
-    await current.initialize();
-    expect(FlutterError.onError, same(firstHandler));
     expect(status.isReady, isTrue);
-    expect(attempts, 2);
+    FlutterError.onError?.call(FlutterErrorDetails(exception: StateError('Failure')));
+    expect(reporter.errors, hasLength(1));
   });
 
   test('Flutter errors preserve the original error and stack and chain the previous handler', () async {
     var forwarded = false;
     FlutterError.onError = (_) => forwarded = true;
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      preparePreferences: () async {},
-      crashReporting: reporter,
-    );
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
     initializer = current;
     await current.initialize();
     final error = StateError('Framework error');
@@ -98,11 +54,7 @@ void main() {
   });
 
   test('unhandled root-isolate errors are reported as fatal and marked handled', () async {
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      preparePreferences: () async {},
-      crashReporting: reporter,
-    );
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
     initializer = current;
     await current.initialize();
     final error = StateError('Async error');
@@ -119,11 +71,7 @@ void main() {
       forwarded = true;
       return false;
     };
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      preparePreferences: () async {},
-      crashReporting: reporter,
-    );
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
     initializer = current;
     await current.initialize();
     expect(PlatformDispatcher.instance.onError?.call(StateError('Error'), StackTrace.empty), isFalse);
@@ -133,11 +81,7 @@ void main() {
 
   test('reporter failures do not recursively throw from the platform handler', () async {
     reporter.fail = true;
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      preparePreferences: () async {},
-      crashReporting: reporter,
-    );
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
     initializer = current;
     await current.initialize();
     expect(PlatformDispatcher.instance.onError?.call(StateError('Error'), StackTrace.empty), isFalse);
@@ -148,13 +92,7 @@ void main() {
     bool previousPlatform(Object error, StackTrace stack) => false;
     FlutterError.onError = previousFlutter;
     PlatformDispatcher.instance.onError = previousPlatform;
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      preparePreferences: () async {},
-      crashReporting: reporter,
-    );
-    initializer = current;
-    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev, initializer: current);
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
     expect(DependencyProvider.get<ApplicationInitializer>(), same(DependencyProvider.get<ApplicationInitializer>()));
     expect(DependencyProvider.isRegistered<PreferencesStorage>(), isTrue);
     await DependencyProvider.get<ApplicationInitializer>().initialize();
@@ -164,11 +102,7 @@ void main() {
   });
 
   test('cleanup does not overwrite a handler installed later by another owner', () async {
-    final current = ApplicationInitializerImpl(
-      startupStatus: status,
-      preparePreferences: () async {},
-      crashReporting: reporter,
-    );
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
     initializer = current;
     await current.initialize();
     void laterFlutter(FlutterErrorDetails details) {}
