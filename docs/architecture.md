@@ -32,9 +32,9 @@ core, router, ui_kit. Зв'язки common ↔ feature ↔ router відпові
 Запуск: binding → ensureSemantics лише в debug → await EasyLocalization.ensureInitialized() →
 await SystemChrome.setPreferredOrientations([portraitUp]) → DI (core, потім data → domain → ui кожної фічі) →
 await ApplicationInitializer.initialize() → runApp(LocalizationsWrapper(child: App())) → splash → вкладки.
-Ініціалізатор встановлює обробники помилок і очікує готовності preferences до runApp.
-Паралельні виклики ділять один Future; після успіху повторна підготовка не виконується.
-При помилці підготовки запуск записує її в локальний CrashReportingService та відкриває
+Ініціалізатор встановлює обробники помилок і позначає StartupStatus ready до runApp.
+Повторний виклик не встановлює обробники вдруге; microtask і кешованого Future немає.
+При помилці ініціалізації запуск записує її в локальний CrashReportingService та відкриває
 оболонку відновлення: splash повторює ініціалізацію через repository, а при повторній
 невдачі показує кнопку повтору. StartupStatus стає ready лише після успіху.
 
@@ -97,12 +97,9 @@ Home поки не потребує repository/interactor; його data/domain-
 споживача й за потреби перетворює на Failure.
 
 `WidgetsFlutterBinding.ensureInitialized()` викликається в mobile до реєстрації DI;
-нативний Flutter-registrant підключає плагін. ApplicationInitializer очікує
-PreferencesStorage.initialize(): одноразовий read-only getKeys перевіряє доступ до платформи,
-не записуючи бізнес-ключів. Конкурентні звернення очікують спільний Future; після помилки
-можна повторити підготовку. Усі читання, записи та remove також очікують initialize(),
-тому прямий споживач не обходить підготовку. Значення не кешуються.
-SharedPreferences.getInstance() для async API не потрібний.
+нативний Flutter-registrant підключає плагін. SharedPreferencesAsync не потребує
+окремого initialize(), getInstance() чи прогріву через getKeys(). Кожна операція
+безпосередньо очікує відповідний виклик платформи, без кешу значень або Future підготовки.
 У тестах використовується офіційний in-memory async backend;
 shared_preferences_platform_interface — test-залежність core та mobile з версією в root.
 
@@ -241,7 +238,7 @@ Debug semantics вмикаються один раз на час життя за
 
 run очікує initializer до створення дерева App. Успішний initializer позначає StartupStatus ready;
 splash лише перевіряє цей стан і через go переходить до вкладок, без повторної ініціалізації.
-Наявне відновлення після невдалої підготовки preferences збережене: лише за відсутності ready
+Наявне відновлення після невдалої ініціалізації збережене: лише за відсутності ready
 splash може повторити невдалу спробу й показати явну кнопку повтору.
 AppThemeProvider обгортає MaterialApp.router; один router живе до dispose App,
 поточні localizationDelegates/supportedLocales/locale оновлюють UI без створення нового router.

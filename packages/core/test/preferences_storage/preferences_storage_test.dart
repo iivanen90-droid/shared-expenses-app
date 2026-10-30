@@ -24,51 +24,6 @@ void main() {
     SharedPreferencesAsyncPlatform.instance = previousPlatform;
   });
 
-  test('concurrent preparation is shared and successful preparation is reused', () async {
-    final platform = _InitializingPlatform();
-    SharedPreferencesAsyncPlatform.instance = platform;
-    final prepared = PreferencesStorageImpl(preferences: SharedPreferencesAsync());
-    final first = prepared.initialize();
-    final second = prepared.initialize();
-    try {
-      await platform.started.future;
-      expect(platform.calls, 1);
-    } finally {
-      platform.release.complete();
-      await Future.wait([first, second]);
-    }
-    await prepared.initialize();
-    expect(platform.calls, 1);
-  });
-
-  test('an initial write waits for platform preparation before changing data', () async {
-    final platform = _InitializingPlatform();
-    SharedPreferencesAsyncPlatform.instance = platform;
-    final prepared = PreferencesStorageImpl(preferences: SharedPreferencesAsync());
-    var completed = false;
-    final write = prepared.writeBool(key: 'flag', value: true).then((_) => completed = true);
-    try {
-      await platform.started.future;
-      expect(completed, isFalse);
-      expect(await platform.getBool('flag', const SharedPreferencesOptions()), isNull);
-    } finally {
-      platform.release.complete();
-      await write;
-    }
-    expect(await prepared.readBool(key: 'flag'), isTrue);
-  });
-
-  test('a failed preparation can be retried without replacing the storage', () async {
-    final platform = _InitializingPlatform(failFirst: true)..release.complete();
-    SharedPreferencesAsyncPlatform.instance = platform;
-    final prepared = PreferencesStorageImpl(preferences: SharedPreferencesAsync());
-    await expectLater(prepared.initialize(), throwsA(isA<PlatformException>()));
-    await prepared.initialize();
-    expect(platform.calls, 2);
-    await prepared.writeString(key: 'ready', value: 'value');
-    expect(await prepared.readString(key: 'ready'), 'value');
-  });
-
   test('missing keys return null for all supported types', () async {
     expect(await storage.readBool(key: 'missing'), isNull);
     expect(await storage.readInt(key: 'missing'), isNull);
@@ -207,21 +162,5 @@ final class _DelayedPlatform extends InMemorySharedPreferencesAsync {
     started.complete();
     await release.future;
     return super.clear(parameters, options);
-  }
-}
-
-final class _InitializingPlatform extends InMemorySharedPreferencesAsync {
-  _InitializingPlatform({this.failFirst = false}) : super.empty();
-  final bool failFirst;
-  final started = Completer<void>();
-  final release = Completer<void>();
-  int calls = 0;
-  @override
-  Future<Set<String>> getKeys(GetPreferencesParameters parameters, SharedPreferencesOptions options) async {
-    calls++;
-    if (!started.isCompleted) started.complete();
-    await release.future;
-    if (failFirst && calls == 1) throw PlatformException(code: 'initialization_failed');
-    return super.getKeys(parameters, options);
   }
 }

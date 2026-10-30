@@ -13,6 +13,7 @@ dependencies:
   router:
   easy_localization:
 dev_dependencies:
+  get_it:
   flutter_test:
     sdk: flutter
   shared_preferences:

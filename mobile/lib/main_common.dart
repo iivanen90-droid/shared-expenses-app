@@ -10,21 +10,17 @@ import 'package:mobile/app.dart';
 // Keep debug semantics enabled for the application lifetime, including bootstrap retries.
 SemanticsHandle? _debugSemanticsHandle;
 
-Future<void> run({
-  required EnvironmentType environment,
-  ApplicationInitializer? initializer,
-  void Function(Widget)? appRunner,
-}) async {
+Future<void> run({required EnvironmentType environment}) async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
-  if (kDebugMode) _debugSemanticsHandle ??= binding.ensureSemantics();
+  if (kDebugMode && !binding.semanticsEnabled) _debugSemanticsHandle ??= binding.ensureSemantics();
   await EasyLocalization.ensureInitialized();
   await SystemChrome.setPreferredOrientations(const [DeviceOrientation.portraitUp]);
-  MainDependenciesModuleResolver.register(environment: environment, initializer: initializer);
+  MainDependenciesModuleResolver.register(environment: environment);
   try {
     await DependencyProvider.get<ApplicationInitializer>().initialize();
   } on Object catch (error, stackTrace) {
     DependencyProvider.get<CrashReportingService>().recordError(error, stackTrace, fatal: true);
   }
-  // On a failed preferences initialization, splash retains its existing retry path.
-  (appRunner ?? runApp)(const LocalizationsWrapper(child: App()));
+  // Splash retains its existing retry path if startup fails.
+  runApp(const LocalizationsWrapper(child: App()));
 }
