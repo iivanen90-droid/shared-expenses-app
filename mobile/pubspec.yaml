@@ -13,8 +13,10 @@ dependencies:
   router:
   easy_localization:
 dev_dependencies:
+  get_it:
   flutter_test:
     sdk: flutter
   shared_preferences:
+  shared_preferences_platform_interface:
 flutter:
   uses-material-design: true

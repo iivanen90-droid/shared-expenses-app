@@ -7,8 +7,14 @@ import 'package:mobile/app.dart';
 
 Future<void> run({required EnvironmentType environment}) async {
   final binding = WidgetsFlutterBinding.ensureInitialized();
-  if (kDebugMode) binding.ensureSemantics();
-  await EasyLocalization.ensureInitialized();
+  if (kDebugMode && !binding.semanticsEnabled) binding.ensureSemantics();
   MainDependenciesModuleResolver.register(environment: environment);
+  try {
+    await DependencyProvider.get<ApplicationInitializer>().initialize();
+  } on Object catch (error, stackTrace) {
+    DependencyProvider.get<CrashReportingService>().recordError(error, stackTrace, fatal: true);
+  }
+  await EasyLocalization.ensureInitialized();
+  // Splash retains its existing retry path if startup fails.
   runApp(const LocalizationsWrapper(child: App()));
 }

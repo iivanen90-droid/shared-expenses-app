@@ -263,3 +263,10 @@ node --test .github/tests/codex-review.test.cjs
 `origin/develop`, PR із base `develop`, code review й одне незалежне схвалення.
 Прямі push, force push, видалення develop і обхід захисту адміністраторами заборонені.
 Правила агента — [AGENTS.md](AGENTS.md), порядок розробки — [CLAUDE.md](CLAUDE.md).
+
+Старт застосунку: Flutter binding → реєстрація core і фіч у DI →
+await ApplicationInitializer.initialize() (обробники помилок і готовність запуску) →
+локалізація → runApp. При помилці ініціалізації доступне відновлення через splash.
+Нові Cubit успадковують SafeCubitWrapper, який ігнорує emit після close.
+Порядок підключення нової фічі та життєвий цикл обробників описані в
+[архітектурі](docs/architecture.md).

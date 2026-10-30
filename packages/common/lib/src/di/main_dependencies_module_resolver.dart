@@ -4,10 +4,16 @@ import 'package:splash_feature/splash_feature.dart';
 import 'package:common/src/initialization/application_initializer.dart';
 
 abstract interface class MainDependenciesModuleResolver {
-  static void register({required EnvironmentType environment, ApplicationInitializer? initializer}) {
+  static void register({required EnvironmentType environment}) {
     CoreDependenciesModuleResolver.register(environment: environment);
-    DependencyProvider.registerFactory<ApplicationInitializer>(
-      () => initializer ?? ApplicationInitializerImpl(startupStatus: DependencyProvider.get<StartupStatus>()),
+    DependencyProvider.registerLazySingleton<ApplicationInitializer>(
+      () => ApplicationInitializerImpl(
+        startupStatus: DependencyProvider.get<StartupStatus>(),
+        crashReporting: DependencyProvider.get<CrashReportingService>(),
+      ),
+      dispose: (instance) {
+        if (instance is ApplicationInitializerImpl) instance.dispose();
+      },
     );
     SplashDataDependencyModuleResolver.register();
     SplashDomainDependencyModuleResolver.register();
