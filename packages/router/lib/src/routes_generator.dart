@@ -50,11 +50,8 @@ class MainShellRoute extends StatefulShellRouteData {
   const MainShellRoute();
 
   @override
-  Widget builder(BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) => MainShellPage(
-    currentIndex: navigationShell.currentIndex,
-    onDestinationSelected: (index) => navigationShell.goBranch(index),
-    child: navigationShell,
-  );
+  Widget builder(BuildContext context, GoRouterState state, StatefulNavigationShell navigationShell) =>
+      MainShellPage(navigationShell: navigationShell);
 }
 
 class HomeBranch extends StatefulShellBranchData {
@@ -72,11 +69,8 @@ class HomeRoute extends GoRouteData with $HomeRoute implements RouteModel {
   const HomeRoute();
   static const path = '/home';
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => buildPlatformPage(
-    context: context,
-    state: state,
-    child: HomePage(onOpenDetails: () => context.pushTo<void>(const HomeDetailsRoute())),
-  );
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const HomePage());
 }
 
 @immutable
@@ -94,11 +88,8 @@ class HomeDetailsRoute extends GoRouteData with $HomeDetailsRoute implements Rou
 class SecondTabRoute extends GoRouteData with $SecondTabRoute implements RouteModel {
   const SecondTabRoute();
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => buildPlatformPage(
-    context: context,
-    state: state,
-    child: SecondTabPage(onOpenDetails: () => context.pushTo<void>(const SecondDetailsRoute())),
-  );
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const SecondTabPage());
 }
 
 @immutable

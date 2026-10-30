@@ -1,24 +1,18 @@
 import 'package:common/common.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class MainShellPage extends StatelessWidget {
-  const MainShellPage({
-    required this.child,
-    required this.currentIndex,
-    required this.onDestinationSelected,
-    super.key,
-  });
-  final Widget child;
-  final int currentIndex;
-  final ValueChanged<int> onDestinationSelected;
+  const MainShellPage({required this.navigationShell, super.key});
+  final StatefulNavigationShell navigationShell;
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: child,
+    body: navigationShell,
     bottomNavigationBar: NavigationBar(
-      selectedIndex: currentIndex,
-      onDestinationSelected: onDestinationSelected,
+      selectedIndex: navigationShell.currentIndex,
+      onDestinationSelected: navigationShell.goBranch,
       destinations: [
         NavigationDestination(
           icon: Semantics(identifier: 'tab_home', child: const Icon(Icons.home_outlined)),
