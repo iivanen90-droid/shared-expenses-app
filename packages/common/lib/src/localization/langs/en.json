@@ -1,5 +1,9 @@
 {
   "appTitle": "Shared expenses",
   "startupError": "Unable to start the app",
-  "retry": "Retry"
+  "retry": "Retry",
+  "homeTab": "Home",
+  "secondTab": "Second tab",
+  "openDetails": "Open details",
+  "details": "Details"
 }

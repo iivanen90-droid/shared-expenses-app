@@ -11,7 +11,7 @@ class App extends StatefulWidget {
 }
 
 class _AppState extends State<App> {
-  final _router = GoRouterConfig.create();
+  final _router = GoRouterConfig.config;
   final _theme = AppTheme.main();
   @override
   void dispose() {
