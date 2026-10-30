@@ -14,6 +14,4 @@ abstract interface class GoRouterConfig {
     overridePlatformDefaultLocation: true,
     routes: $appRoutes,
   );
-
-  static GoRouter create() => config;
 }

@@ -31,7 +31,7 @@ class SplashRoute extends GoRouteData with $SplashRoute implements RouteModel {
     TypedStatefulShellBranch<HomeBranch>(
       routes: [
         TypedGoRoute<HomeRoute>(
-          path: '/home',
+          path: HomeRoute.path,
           routes: [TypedGoRoute<HomeDetailsRoute>(path: 'details')],
         ),
       ],
