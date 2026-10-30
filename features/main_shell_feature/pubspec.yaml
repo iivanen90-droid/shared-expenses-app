@@ -8,6 +8,8 @@ dependencies:
   flutter:
     sdk: flutter
   common:
+  router:
+  go_router:
   ui_kit:
   easy_localization:
 dev_dependencies:
