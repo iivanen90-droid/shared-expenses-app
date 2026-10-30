@@ -1,54 +1,51 @@
-# План розвитку Tricount
+# Tricount development roadmap
 
-Джерело рішень — [довідник Inspiro](inspiro-architecture-guide.md).
-Фактично реалізовані пакети, шари, ініціалізація, навігація й генерація описані
-в [поточній архітектурі](architecture.md). Workspace та стартова оболонка вже створені.
-Робоча назва — Tricount; стартовий екран зберігає назву «Спільні витрати».
-Бізнес-логіка обліку витрат, групи, збереження витрат і сервер ще не реалізовані.
+Design decisions originate in the [Inspiro guide](inspiro-architecture-guide.md).
+Implemented packages, layers, initialization, navigation, and generation are described in the
+[current architecture](architecture.md). The workspace and initial shell already exist.
+The working name is Tricount; the home screen retains the localized Shared expenses title.
+Expense business logic, groups, expense persistence, and a backend are not implemented yet.
 
-## Попередня карта модулів
+## Preliminary module map
 
+This is a planning proposal, not an approved screen list or a list of implemented features.
+Add each package when its corresponding scenario is agreed upon.
 
-Це пропозиція для планування, не затверджений перелік екранів і не перелік
-реалізованих функцій. Пакет додається, коли відповідний сценарій погоджено.
-
-| Модуль | Призначення | Що уточнити за скриншотами й вимогами |
+| Module | Purpose | Details to clarify from screenshots and requirements |
 |---|---|---|
-| `splash_feature` | Вхідна перевірка готовності застосунку й вибір наступного маршруту | Умови переходу та потрібні стартові перевірки |
-| `groups_feature` | Список груп спільних витрат, створення й деталі групи | Поля, порядок списку, редагування й архівація |
-| `participants_feature` | Учасники групи | Додавання, зміна імені, обмеження видалення |
-| `expenses_feature` | Введення, перегляд і редагування витрати | Платники, частки, валюта, категорії, перевірка введення |
-| `balances_feature` | Підрахунок балансів і відображення заборгованостей | Правила розподілу й спосіб показу результату |
-| `settlements_feature` | Облік повернення коштів між учасниками | Часткове повернення, виправлення й скасування |
-| `settings_feature` | Мова, оформлення та інші погоджені налаштування | Фактичний набір налаштувань |
+| `splash_feature` | Check startup readiness and select the next route | Transition conditions and required startup checks |
+| `groups_feature` | List, create, and view shared-expense groups | Fields, ordering, editing, and archiving |
+| `participants_feature` | Group participants | Adding, renaming, and deletion restrictions |
+| `expenses_feature` | Enter, view, and edit expenses | Payers, shares, currency, categories, and validation |
+| `balances_feature` | Calculate balances and display debts | Allocation rules and result presentation |
+| `settlements_feature` | Record repayments between participants | Partial repayment, corrections, and cancellation |
+| `settings_feature` | Language, appearance, and other agreed settings | The actual set of settings |
 
-Авторизацію, сервер, синхронізацію, сповіщення й зовнішні інтеграції визначимо
-окремо, якщо вони з'являться у вимогах. Довідник не є продуктовою специфікацією Tricount.
+Define authentication, backend, synchronization, notifications, and external integrations separately
+if they become requirements. The guide is not Tricount's product specification.
 
+Splash and home are implemented as the initial shell. Other modules in the table remain planned
+and will be created from agreed screenshots. Add ObjectBox structured data and DTO/json_serializable
+only with the relevant scenario. StatefulShellRoute already provides a two-tab shell without financial logic.
 
-Splash і home реалізовані як початкова оболонка. Інші модулі з таблиці залишаються
-планом і створюються за погодженими скриншотами. Структуровані дані ObjectBox,
-DTO/json_serializable потрібен лише разом із відповідним сценарієм. StatefulShellRoute вже реалізовано як оболонку двох вкладок без фінансової логіки.
+## Financial data rules
 
-## Правила фінансових даних
+- Store amounts as `int` minor currency units or an exact decimal type; do not use `double`.
+- Allocated shares must sum exactly to the expense total; rounding remainder allocation must be explicit and reproducible.
+- Currency is part of the monetary value. Do not sum different currencies without an agreed conversion mechanism.
+- Balances include expenses and repayments according to agreed business rules.
+- Define failure/retry behavior for persistence and server-side access checks for server interactions.
 
+## Next steps
 
-- Суми зберігаються в найменших одиницях валюти як `int` або в точному десятковому типі; `double` не використовується.
-- Сума часток точно дорівнює сумі витрати; розподіл залишку від округлення явний і відтворюваний.
-- Валюта є частиною грошового значення. Різні валюти не підсумовуються без погодженого механізму конвертації.
-- Баланси враховують витрати та повернення коштів за погодженими бізнес-правилами.
-- Для збереження визначаються поведінка при помилках і повторних запитах; для серверної взаємодії — перевірки доступу на сервері.
+1. Agree on the first product scenario: screen, fields, states, transitions, and data rules.
+2. Add the feature with the full Page → Cubit → Interactor → Repository → Source flow.
+3. Connect the required storage/API, mappers, and error handling. Do not copy unrelated Inspiro business code.
+4. Verify calculations, rounding, currencies, and recovery when those behaviors are introduced.
+5. Add unit/widget/e2e checks for the agreed behavior; verify Android and iOS where the environment allows it.
 
-
-## Подальші кроки
-
-1. Узгодити перший продуктовий сценарій: екран, поля, стани, переходи, правила даних.
-2. Додати відповідну фічу з повним потоком Page → Cubit → Interactor → Repository → Source.
-3. Підключити потрібне сховище/API, мапери й обробку помилок. Не переносити сторонній бізнес-код Inspiro.
-4. Перевірити розрахунки, округлення, валюти й відновлення після помилок, якщо вони з'явилися.
-5. Додати unit/widget/e2e перевірки погодженої поведінки; перевірити Android та iOS у доступному середовищі.
-
-Версії в довіднику — знімок Inspiro; фактично узгоджені версії фіксує root pubspec.lock.
-Flutter 3.47.7 обирається локально через `fvm use 3.47.7`; `.fvmrc` ігнорується Git. Firebase, покупки, атрибуція та інтеграції не додаються автоматично.
-Правила — у [CLAUDE.md](../CLAUDE.md) і [AGENTS.md](../AGENTS.md), команди — у [README](../README.md).
-Зміни — окремим PR у develop, code review та одне незалежне схвалення.
+Versions in the guide are an Inspiro snapshot; the root pubspec.lock records the agreed versions.
+Select Flutter 3.47.7 locally with `fvm use 3.47.7`; `.fvmrc` is ignored by Git.
+Firebase, purchases, attribution, and integrations are not added automatically.
+Rules are in [CLAUDE.md](../CLAUDE.md) and [AGENTS.md](../AGENTS.md); commands are in [README](../README.md).
+Submit changes through a separate PR to develop, with code review and one independent approval.

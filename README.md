@@ -1,34 +1,33 @@
-# Tricount — Спільні витрати
+# Tricount — Shared expenses
 
-Flutter-застосунок для Android/iOS. Реалізована базова оболонка: splash із перевіркою
-готовності та повтором після помилки, стартовий екран, дві вкладки з незалежними стеками,
-українська/англійська локалізація.
-Облік витрат, групи, баланси та синхронізація ще не реалізовані.
+Flutter application for Android/iOS. The implemented shell includes splash with readiness checks
+and retry after failure, a home screen, two tabs with independent stacks, and Ukrainian/English localization.
+Expense tracking, groups, balances, and synchronization are not implemented yet.
 
-## Структура
+## Structure
 
 Dart workspace: `mobile/`, `packages/{core,ui_kit,common,router}/`,
-`features/{splash_feature,home_feature,main_shell_feature}/`. Залежності узгоджуються одним root `pubspec.lock`.
-[Поточна архітектура](docs/architecture.md) пояснює пакети, шари, залежності та додавання фіч.
-[Довідник Inspiro](docs/inspiro-architecture-guide.md) — джерело рішень;
-[план Tricount](docs/tricount-architecture.md) — майбутні продуктові модулі.
+`features/{splash_feature,home_feature,main_shell_feature}/`. Dependencies share one root `pubspec.lock`.
+The [current architecture](docs/architecture.md) explains packages, layers, dependencies, and adding features.
+The [Inspiro guide](docs/inspiro-architecture-guide.md) is the source reference;
+the [Tricount roadmap](docs/tricount-architecture.md) describes future product modules.
 
-## Інструменти та залежності
+## Tools and dependencies
 
-- Flutter **3.47.7** / Dart **3.13.5**, точна версія для всіх розробників; команди нижче використовують FVM.
-- Android SDK і JDK для Android; macOS/Xcode для iOS.
-- Ключі, локальні шляхи SDK та приватні envs не комітяться.
+- Flutter **3.47.7** / Dart **3.13.5**, pinned for every developer; the commands below use FVM.
+- Android SDK and JDK for Android; macOS/Xcode for iOS.
+- Do not commit keys, local SDK paths, or private environments.
 
 ```sh
 fvm use 3.47.7
 fvm flutter pub get
 ```
 
-Якщо `fvm` ще не встановлено, скористайтеся [інструкцією FVM](https://fvm.app/documentation/getting-started/installation).
-Після встановлення executable FVM має бути доступний у `PATH` термінала.
-`.fvmrc` і `.fvm/` локальні та ігноруються Git. Після кожного нового клонування
-виконайте `fvm use 3.47.7` з кореня: це створить локальний `.fvmrc` для потрібної версії.
-На Windows без прав створення symlink перед цією командою створіть у корені локальний `.fvmrc`:
+If `fvm` is not installed, follow the [FVM installation guide](https://fvm.app/documentation/getting-started/installation).
+Make its executable available in the terminal's `PATH`.
+`.fvmrc` and `.fvm/` are local and ignored by Git. After every fresh clone,
+run `fvm use 3.47.7` from the root to create the local `.fvmrc` for the required version.
+On Windows without symlink creation privileges, first create this local root `.fvmrc`:
 
 ```json
 {
@@ -38,18 +37,17 @@ fvm flutter pub get
 }
 ```
 
-У цьому режимі CLI працює без символічних посилань; SDK в IDE обирається вручну.
-Не додавайте локальний `.fvmrc` у Git примусово.
-Не використовуйте `fvm global`: версія обирається лише для цього репозиторію.
+This mode runs the CLI without symbolic links; select the SDK manually in the IDE.
+Do not force-add the local `.fvmrc` to Git or use `fvm global`: select the version only for this repository.
 
-## Учасники workspace та залежності
+## Workspace members and dependencies
 
-Workspace member — пакет із власним `pubspec.yaml`, зареєстрований у `workspace:` кореневого
-`pubspec.yaml`. Усі учасники використовують один набір версій, кореневі `pubspec.lock` і
-`.dart_tool/package_config.json`. Dart workspaces підтримуються починаючи з Dart 3.6;
-зафіксована для проєкту версія Dart 3.13.5 підходить.
+A workspace member is a package with its own `pubspec.yaml`, registered under `workspace:` in the root
+`pubspec.yaml`. All members share one set of versions, the root `pubspec.lock`, and
+`.dart_tool/package_config.json`. Dart workspaces require Dart 3.6 or later;
+the pinned Dart 3.13.5 version satisfies this requirement.
 
-| Каталог | `name` пакета |
+| Directory | Package `name` |
 |---|---|
 | `packages/core/` | `core` |
 | `packages/ui_kit/` | `ui_kit` |
@@ -60,25 +58,25 @@ Workspace member — пакет із власним `pubspec.yaml`, зареєс
 | `features/home_feature/` | `home_feature` |
 | `features/main_shell_feature/` | `main_shell_feature` |
 
-Кожен учасник має `resolution: workspace` і `publish_to: 'none'`. Версії зовнішніх залежностей
-обмежуються в кореневому `pubspec.yaml`, учасники перелічують потрібні пакети без версій.
-Обмеження кореня беруть участь у спільному розв'язанні залежностей; точні версії записані у lockfile.
-Внутрішні пакети автоматично беруться з workspace за `name`, без `path:` чи `dependency_overrides`.
-Окремих overrides або Melos для поточної структури не потрібно.
-Не запускайте незалежний `pub get` зі скинутим workspace і не комітьте lockfile у підпакетах.
-Звичайний `pub get` з каталогу учасника також використовує кореневий workspace.
+Each member declares `resolution: workspace` and `publish_to: 'none'`. The root `pubspec.yaml`
+constrains external dependency versions; members list the packages they need without versions.
+Root constraints participate in the shared resolution; the lockfile records exact versions.
+Internal packages resolve from the workspace by `name`, without `path:` or `dependency_overrides`.
+The current structure needs neither extra overrides nor Melos.
+Do not run an independent `pub get` with workspace resolution disabled or commit lockfiles in subpackages.
+A normal `pub get` from a member directory also uses the root workspace.
 
-Перевірити зареєстровані пакети з кореня:
+List registered packages from the root:
 
 ```sh
 fvm dart pub workspace list
 ```
 
-### Додавання feature-пакета
+### Adding a feature package
 
-Приклад нижче — шаблон для майбутньої погодженої функції, а не вже створений пакет.
+The following example is a template for a future agreed feature, not an existing package.
 
-1. Створіть `features/example_feature/lib/example_feature.dart` і `features/example_feature/pubspec.yaml`:
+1. Create `features/example_feature/lib/example_feature.dart` and `features/example_feature/pubspec.yaml`:
 
 ```yaml
 name: example_feature
@@ -93,218 +91,205 @@ dependencies:
   core:
 ```
 
-2. Додайте `  - features/example_feature` до списку `workspace:` у кореневому `pubspec.yaml`.
-   Назва пакета має бути унікальною. Версію нової зовнішньої залежності задайте в корені,
-   а в пакеті додайте її без версії.
-3. У пакеті-споживачі додайте залежність `example_feature:` й імпортуйте публічний barrel:
-   `package:example_feature/example_feature.dart`. Саме членство у workspace не замінює залежність.
-4. Додайте потрібні data/domain/ui, тести й DI за [архітектурною інструкцією](docs/architecture.md#нова-фіча).
-   Якщо фіча містить екран, зареєструйте його DI у common та маршрут у router.
-5. З кореня виконайте `fvm flutter pub get`, `fvm dart pub workspace list` та
-   `fvm dart tools/workspace.dart check`. Для фіч із codegen перед перевіркою виконайте
-   `fvm dart tools/workspace.dart generate`. Комітьте зміни кореневого lockfile разом із pubspec-файлами.
+2. Add `  - features/example_feature` to the root `workspace:` list. The name must be unique.
+   Set any new external dependency's version at the root and list it without a version in the member.
+3. Add `example_feature:` as a consumer dependency and import its public barrel:
+   `package:example_feature/example_feature.dart`. Workspace membership does not replace a dependency declaration.
+4. Add data/domain/ui, tests, and DI following the [architecture instructions](docs/architecture.md#adding-a-feature).
+   For a screen feature, register its DI in common and route in router.
+5. From the root, run `fvm flutter pub get`, `fvm dart pub workspace list`, and
+   `fvm dart tools/workspace.dart check`. For features with codegen, first run
+   `fvm dart tools/workspace.dart generate`. Commit root lockfile changes with the pubspec files.
 
-## Базова тема
+## Base theme
 
-Застосунок використовує стандартний Flutter Material і одну тему `AppTheme.main()` із ui_kit.
-Кольори доступні через `context.colors`, текстові стилі — через `context.texts`.
-Використовується стандартний шрифт Flutter, власні font assets не підключені.
-За новим етапом прямі material_ui/cupertino_ui залежності прибрано; ці пакети ще присутні
-транзитивно через go_router. Деталі — в [архітектурній документації](docs/architecture.md#базова-тема-ui_kit).
+The application uses standard Flutter Material and one `AppTheme.main()` from ui_kit.
+Access colors through `context.colors` and text styles through `context.texts`.
+Flutter's default font is used; no custom font assets are included.
+The base-theme stage removed direct material_ui/cupertino_ui dependencies; those packages remain
+transitive dependencies of go_router. See the [architecture documentation](docs/architecture.md#base-theme-ui_kit).
 
-## Запуск
+## Running the application
 
-З кореня перейдіть у `mobile/`:
+From the root, enter `mobile/`:
 
 ```sh
 cd mobile
 fvm flutter run --flavor dev --dart-define-from-file=../envs/dev.example.json
 ```
 
-Для prod використовуйте `--flavor prod --dart-define-from-file=../envs/prod.example.json`.
-Безпечні приклади працюють без секретів; власні файли `envs/*.json` ігноруються Git.
-ENVIRONMENT має збігатися з native flavor. Dev має окремий id із `.dev`.
-Android productFlavors та iOS shared schemes налаштовані; iOS збирається тільки на macOS/Xcode.
-Production signing, сервер та публікація в магазинах не налаштовані.
+For prod, use `--flavor prod --dart-define-from-file=../envs/prod.example.json`.
+Safe examples work without secrets; custom `envs/*.json` files are ignored by Git.
+ENVIRONMENT must match the native flavor. Dev uses a separate ID with the `.dev` suffix.
+Android productFlavors and iOS shared schemes are configured; iOS builds require macOS/Xcode.
+Production signing, a backend, and store publishing are not configured.
 
-## Аналізатор і форматування
+## Analyzer and formatting
 
-Усі workspace-пакети й `mobile` успадковують кореневий `analysis_options.yaml` через пошук
-у батьківських каталогах. Не створюйте окремі правила в підпакетах без потреби;
-якщо локальний файл потрібний, він має явно включати кореневий через `include`.
-Основа — `flutter_lints`, увімкнені `strict-casts` і `strict-raw-types`, `formatter.page_width: 120`.
+All workspace packages and `mobile` inherit the root `analysis_options.yaml` through parent-directory lookup.
+Do not create separate subpackage rules without a need; any necessary local file must explicitly
+include the root configuration through `include`.
+The configuration uses `flutter_lints`, `strict-casts`, `strict-raw-types`, and `formatter.page_width: 120`.
 
-| Рівень | Правила з архітектурного довідника |
+| Severity | Rules from the architecture guide |
 |---|---|
 | `error` | `unused_import`, `missing_required_param`, `must_be_immutable`, `missing_enum_constant_in_switch`, `sort_child_properties_last`, `missing_dependency`, `invalid_dependency` |
 | `warning` | `always_use_package_imports`, `prefer_const_constructors`, `require_trailing_commas`, `prefer_final_locals`, `avoid_print` |
 
-Згенеровані `*.g.dart`, `*.freezed.dart`, `generated/` та build-каталоги виключені з аналізу.
-`check` вважає невдалими і warnings, і infos. Форматування вихідного коду:
+Generated `*.g.dart`, `*.freezed.dart`, `generated/`, and build directories are excluded from analysis.
+`check` fails on both warnings and infos. Format and check source code with:
 
 ```sh
 fvm dart tools/workspace.dart format
 fvm dart tools/workspace.dart check
 ```
 
-Кореневий `build.yaml` задає Freezed `line_length: 120`; такі ж локальні налаштування є у
-feature-пакетах, звідки запускається генератор. У Freezed 3.2.5 `line_length` сам по собі
-не задає ширину DartFormatter: `format: true` прибирає заборону `dart format off`, а фінальний
-`dart format` у workspace-команді застосовує спільну ширину 120 до згенерованого коду.
-Локальні SDK, build/cache-каталоги та налаштування IDE виключені через `.gitignore`.
+The root `build.yaml` sets Freezed `line_length: 120`; feature packages that run the generator
+have matching local configuration. In Freezed 3.2.5, `line_length` alone does not set DartFormatter's width:
+`format: true` removes the `dart format off` restriction; the workspace command's final
+`dart format` applies the shared width of 120 to generated code.
+Local SDKs, build/cache directories, and IDE settings are excluded through `.gitignore`.
 
-## Локалізація en / uk
+## Localization: en / uk
 
-`packages/common/lib/src/localization/langs/en.json` та `uk.json` містять однакові ключі.
-Шлях зареєстрований у assets пакета common, wrapper використовує пакетний префікс
-`packages/common/lib/src/localization/langs`. `common.dart` експортує LocalizationsWrapper,
-AppLocalizationContext та згенеровані LocaleKeys.
+`packages/common/lib/src/localization/langs/en.json` and `uk.json` contain the same keys.
+The path is registered in common's assets; the wrapper uses the package prefix
+`packages/common/lib/src/localization/langs`. `common.dart` exports LocalizationsWrapper,
+AppLocalizationContext, and generated LocaleKeys.
 
-Після `WidgetsFlutterBinding.ensureInitialized()` mobile викликає
-`await EasyLocalization.ensureInitialized()`, а потім обгортає App у LocalizationsWrapper.
-Збережена мова має пріоритет; без неї обирається підтримувана системна мова.
-Для непідтримуваної мови та відсутнього перекладу використовується англійська (`en`).
-MaterialApp отримує delegates, supportedLocales та поточний `context.locale`, тому
-`await context.setLocale(const Locale('uk'))` або Locale('en') оновлює інтерфейс і зберігає вибір.
-Окремого екрана вибору мови поки немає.
+After `WidgetsFlutterBinding.ensureInitialized()`, mobile calls
+`await EasyLocalization.ensureInitialized()` and wraps App in LocalizationsWrapper.
+A saved language takes precedence; otherwise, a supported system language is selected.
+English (`en`) is the fallback for unsupported languages and missing translations.
+MaterialApp receives delegates, supportedLocales, and the current `context.locale`, so
+`await context.setLocale(const Locale('uk'))` or Locale('en') updates the UI and saves the selection.
+There is no language-selection screen yet.
 
-Щоб додати переклад, додайте той самий ключ і непорожній текст до обох JSON, потім з кореня
-запустіть `bash tools/tr_keys_gen.sh` (на Windows — у Git Bash). Джерело генерації — en.json;
-`locale_keys.g.dart` не редагується вручну. Без Bash виконайте з packages/common/:
+Add each new key with nonempty text to both JSON files, then run `bash tools/tr_keys_gen.sh`
+from the root (Git Bash on Windows). en.json is the generation source; never edit `locale_keys.g.dart` manually.
+Without Bash, run from packages/common/:
 
 ```sh
 fvm dart run easy_localization:generate -S lib/src/localization/langs -s en.json -O lib/src/localization -f keys -o locale_keys.g.dart
 fvm dart format lib/src/localization/locale_keys.g.dart
 ```
 
-У UI використовуйте `LocaleKeys.someKey.tr(context: context)`, а не текст чи ключі вручну.
-Після зміни перекладів виконайте `fvm dart tools/workspace.dart check` з кореня.
-Перевірки common звіряють JSON-ключі, відновлення мови, оновлення UI та англійський fallback.
+Use `LocaleKeys.someKey.tr(context: context)` in UI instead of literal text or manually entered keys.
+After translation changes, run `fvm dart tools/workspace.dart check` from the root.
+Common tests verify matching JSON keys, language restoration, UI updates, and English fallback.
 
-## Генерація
+## Generation
 
 ```sh
 fvm dart tools/workspace.dart generate
 ```
 
-Скрипт генерує LocaleKeys у common, assets у ui_kit, типізовані routes у router та freezed-стани
-у фічах, потім форматує код. Кожен build_runner запускається з пакета-власника.
-JIT-режим не залежить від AOT-компіляції генераторів у тимчасовому каталозі Windows.
-Згенеровані `*.g.dart`, `*.freezed.dart` та `assets.gen.dart` зберігаються в Git і не редагуються вручну.
-Окремий пакет: `fvm dart run build_runner build --force-jit` у його каталозі.
-Для ключів та assets є також `tools/tr_keys_gen.sh` і `tools/flutter_gen.sh`.
+The script generates LocaleKeys in common, assets in ui_kit, typed routes in router, and freezed states
+in features, then formats code. Each build_runner runs from its owning package.
+JIT mode avoids reliance on AOT generator compilation in Windows temporary directories.
+Generated `*.g.dart`, `*.freezed.dart`, and `assets.gen.dart` files are committed and never edited manually.
+For one package, run `fvm dart run build_runner build --force-jit` in its directory.
+`tools/tr_keys_gen.sh` and `tools/flutter_gen.sh` are also available for keys and assets.
 
-## Перевірки
+## Verification
 
 ```sh
 fvm dart tools/workspace.dart check
 ```
 
-Виконує `pub get --enforce-lockfile`, перевірку форматування, строгий аналіз усього workspace
-та тести в кожному пакеті, де є `test/`. Root не містить Flutter-тестів.
-Окремі команди: `format`, `analyze`, `test`, `get`, `generate` замість `check`.
-Наприклад, з `features/splash_feature/` можна виконати `fvm flutter test`.
-Якщо SDK уже встановлений без FVM, локально задайте `TRICOUNT_FLUTTER_SDK` і запускайте
-`dart tools/workspace.dart check`; шлях не записується у файли репозиторію.
+Runs `pub get --enforce-lockfile`, formatting checks, strict analysis of the entire workspace,
+and tests in each package with a `test/` directory. The root contains no Flutter tests.
+Individual commands: replace `check` with `format`, `analyze`, `test`, `get`, or `generate`.
+For example, run `fvm flutter test` from `features/splash_feature/`.
+If the SDK is installed without FVM, set `TRICOUNT_FLUTTER_SDK` locally and run
+`dart tools/workspace.dart check`; the path is not written to repository files.
 
-Android dev-збірка з `mobile/`:
+Android dev build from `mobile/`:
 
 ```sh
 fvm flutter build apk --debug --flavor dev --dart-define-from-file=../envs/dev.example.json
 ```
 
-Maestro після встановлення dev-застосунку: `maestro test .maestro/startup.yaml` з кореня.
-Сценарій використовує Semantics identifier `home_title`. Наявність сценарію не означає,
-що його запущено на пристрої. Flutter CI не увімкнено; його повернення — окрема задача.
+After installing the dev app, run `maestro test .maestro/startup.yaml` from the root.
+The scenario uses the Semantics identifier `home_title`. A scenario's presence does not mean
+it has been run on a device. Flutter CI is disabled; restoring it is a separate task.
 
 ### Codex code review
 
+Enable automatic code review for this repository in Codex settings separately and select
+the trigger to review after each push to a pull request.
+`AGENTS.md` defines review rules but does not enable that setting.
+If settings did not persist, refresh the page and check again.
+In a connected repository, request review with the PR comment `@codex review`.
+A push without a pull request is not a Codex review request.
 
-Окремо увімкни автоматичний code review для цього репозиторію в налаштуваннях
-Codex і вибери тригер перевірки після кожного push у pull request.
-`AGENTS.md` задає правила перевірки, але сам не вмикає цей перемикач.
-Якщо налаштування не збереглися, онови сторінку й перевір їх повторно.
-У підключеному репозиторії review також можна запросити коментарем `@codex review`
-у pull request. Звичайний push без pull request не є запитом Codex review.
+The `.github/workflows/codex-review.yml` workflow automatically posts `@codex review` when a PR
+targeting `develop` or `main` is opened, reopened, updated by a push, or marked ready for review.
+A new automatic run cancels the previous automatic run for that PR. Manual reruns have separate
+concurrency groups per SHA: rerunning an old commit does not cancel an automatic run or a manual rerun
+for a newer commit. The workflow checks that the commit is current before posting.
+Normal events for the same commit do not duplicate comments. If Codex did not accept the request,
+open **Actions → Request Codex review → the relevant run → Re-run jobs → Re-run all jobs**, or reopen
+the PR. These explicit retries post a new request even when an old marker exists.
+Rerunning an outdated commit, closed PR, or draft does not post a comment.
+Drafts, fork PRs, and Dependabot PRs are skipped; request review manually when they are ready.
+The workflow uses standard `GITHUB_TOKEN` with `pull-requests: write` and needs no `OPENAI_API_KEY`.
+Repository policy must allow that permission.
+The repository must be connected to Codex with a published cloud environment for review to run.
+If the bot requests an environment, finish setup and retry after publishing it.
+A comment is a review request: confirm actual execution through Codex's 👀 reaction and review result.
+A comment posted by `github-actions[bot]` alone does not confirm that Codex accepted the request.
 
-Workflow `.github/workflows/codex-review.yml` автоматично додає коментар
-`@codex review` після відкриття PR у `develop` або `main`, повторного відкриття, нового push
-або переведення чернетки в готовий до перевірки PR. Новий автоматичний запуск
-скасовує попередній автоматичний запуск для цього PR. Ручні повтори мають
-окрему групу для кожного SHA: повтор старого коміту не скасовує автоматичний
-запуск або ручний повтор нового коміту. Перед публікацією перевіряється
-актуальність коміту.
-Звичайні події для того самого коміту не дублюють коментар. Якщо Codex не
-прийняв запит, відкрий **Actions → Request Codex review → потрібний запуск →
-Re-run jobs → Re-run all jobs** або повторно відкрий PR: ці явні повторні
-спроби додають новий запит навіть за наявності старого маркера. Перезапуск
-застарілого коміту, закритого PR або чернетки не публікує коментар.
-Чернетки, PR із форків і PR Dependabot
-пропускаються; для них запит можна залишити вручну після підготовки PR.
-Workflow використовує стандартний `GITHUB_TOKEN` із правом `pull-requests: write`
-і не потребує `OPENAI_API_KEY`. Політика репозиторію має дозволяти це право.
-Для виконання запиту репозиторій має бути підключений до Codex і мати
-опубліковане хмарне середовище. Якщо бот просить створити середовище,
-заверши його налаштування й повтори запит після публікації.
-Коментар є запитом на review: фактичний запуск потрібно підтвердити реакцією
-Codex 👀 та результатом перевірки. Сам факт публікації коментаря від
-`github-actions[bot]` не підтверджує, що Codex прийняв запит.
-
-Перевірка сценаріїв workflow (потрібен Node.js 22 або новіший):
+Workflow scenario tests require Node.js 22 or later:
 
 ```sh
 node --test .github/tests/codex-review.test.cjs
 ```
 
-Офіційна інструкція: [Codex review у GitHub](https://developers.openai.com/codex/integrations/github).
+Official instructions: [Codex review on GitHub](https://developers.openai.com/codex/integrations/github).
 
+## Change workflow
 
-## Порядок внесення змін
+`develop` is the default protected branch. Each task uses a separate branch from current
+`origin/develop`, a PR targeting `develop`, code review, and one independent approval.
+Direct pushes, force pushes, deleting develop, and administrator bypass are prohibited.
+Agent rules are in [AGENTS.md](AGENTS.md); the development workflow is in [CLAUDE.md](CLAUDE.md).
 
-`develop` — основна й захищена гілка. Кожна задача — окрема гілка від актуального
-`origin/develop`, PR із base `develop`, code review й одне незалежне схвалення.
-Прямі push, force push, видалення develop і обхід захисту адміністраторами заборонені.
-Правила агента — [AGENTS.md](AGENTS.md), порядок розробки — [CLAUDE.md](CLAUDE.md).
+Application startup: Flutter binding → debug semantics → localization → await portraitUp →
+register core and feature DI → await ApplicationInitializer.initialize() (error handlers and startup readiness) → runApp.
+Splash retains recovery after initialization failure. New Cubits extend SafeCubitWrapper,
+which ignores emit after close. Feature registration and error-handler lifecycle are documented
+in the [architecture](docs/architecture.md).
 
-Старт застосунку: Flutter binding → debug semantics → локалізація → await portraitUp →
-реєстрація core і фіч у DI → await ApplicationInitializer.initialize()
-(обробники помилок і готовність запуску) → runApp. При помилці ініціалізації доступне відновлення через splash.
-Нові Cubit успадковують SafeCubitWrapper, який ігнорує emit після close.
-Порядок підключення нової фічі та життєвий цикл обробників описані в
-[архітектурі](docs/architecture.md).
+## Tab navigation
 
-## Навігація вкладок
+After initialization, /splash is replaced by /home. A typed StatefulShellRoute preserves independent
+stacks for two tabs; the second tab is a placeholder shell.
+Each tab's Open details button opens a placeholder nested page to verify push/Back and stack preservation.
+These pages have no financial logic. The theme and en/uk localization apply to both tabs.
+Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
-Після ініціалізації /splash замінюється на /home. Дві вкладки зберігають незалежні
-стеки через типізований StatefulShellRoute; друга вкладка — порожня оболонка.
-«Відкрити деталі» в кожній вкладці веде на порожню вкладену сторінку для перевірки
-push/Back і збереження стеків. Фінансової логіки в цих сторінках немає.
-Тема та en/uk локалізація застосовуються до обох вкладок.
-Матеріальні віджети використовують MaterialPage на Android і SDK CupertinoPage на iOS.
-
-Після зміни routes з packages/router виконайте:
+After route changes, run from packages/router:
 
 ~~~sh
 fvm dart run build_runner build --force-jit
 ~~~
 
-Ручний сценарій перемикання й Back — у [документації навігації](docs/architecture.md#оболонка-вкладок-і-маршрути).
+The manual switching/Back scenario is in the [navigation documentation](docs/architecture.md#tab-shell-and-routes).
 
-Оболонка mobile очікує локалізацію та portraitUp перед DI, а завершення ініціалізатора —
-перед runApp. Глобальні обробники підключає лише ApplicationInitializer.
-Успішно підготовлений запуск не викликається повторно на splash.
-Чекліст ручного запуску й перевірки локального журналу помилок —
-[в архітектурі](docs/architecture.md#оболонка-mobile-і-старт).
+The mobile shell awaits localization and portraitUp before DI, then awaits the initializer before runApp.
+Only ApplicationInitializer installs global error handlers. Successful startup does not repeat on splash.
+The manual launch and local error-log checklist is in the
+[architecture](docs/architecture.md#mobile-shell-and-startup).
 
-## Майбутні API-запити
+## Future API requests
 
-У core є DioClient із GET/POST/PUT/PATCH/DELETE/HEAD, конфігурованими baseUrl,
-таймаутами й headers. Конфігурацію можна передати через dioConfiguration до
-MainDependenciesModuleResolver.register. Інтерфейс ApiClient та DioClient у DI
-посилаються на один lazy singleton. Результат — Either<ApiError,T>, де ApiError є Failure.
-Перетворення даних виконує переданий decode, а бізнес-помилки визначатиме відповідна фіча.
+Core provides DioClient with GET/POST/PUT/PATCH/DELETE/HEAD, configurable baseUrl, timeouts, and headers.
+Pass configuration through dioConfiguration to MainDependenciesModuleResolver.register.
+ApiClient and DioClient in DI refer to the same lazy singleton. The result is Either<ApiError,T>,
+where ApiError is a Failure. The supplied decode transforms data; each feature will define its business failures.
 
-Адресу сервера й endpoints ще не налаштовано, застосунок не виконує API-запитів при старті.
-Мережеві тести працюють лише з підставним HttpClientAdapter без інтернет-запитів.
-Налаштування, interceptor-и, логування та очищення — у
-[документації клієнта](docs/architecture.md#мережевий-клієнт-core).
+No server URL or endpoints are configured; the app makes no API requests at startup.
+Network tests use a fake HttpClientAdapter without Internet requests.
+Configuration, interceptors, logging, and cleanup are described in the
+[client documentation](docs/architecture.md#network-client-core).
