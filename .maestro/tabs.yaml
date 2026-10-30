@@ -1,0 +1,29 @@
+appId: com.example.shared_expenses_app.dev
+---
+- launchApp
+- assertVisible:
+    id: home_title
+- tapOn:
+    id: home_open_details
+- assertVisible:
+    id: home_details
+- tapOn:
+    id: tab_second
+- tapOn:
+    id: second_open_details
+- assertVisible:
+    id: second_details
+- tapOn:
+    id: tab_home
+- assertVisible:
+    id: home_details
+- back
+- assertVisible:
+    id: home_title
+- tapOn:
+    id: tab_second
+- assertVisible:
+    id: second_details
+- back
+- assertVisible:
+    id: second_tab_title

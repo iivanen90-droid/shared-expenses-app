@@ -9,3 +9,9 @@ export 'src/analytics/crash_reporting_service.dart' show CrashReportingService;
 export 'src/startup/startup_status.dart';
 
 export 'package:fpdart/fpdart.dart' show Either, Left, Right, Unit, unit;
+
+export 'src/api_client/api_error.dart';
+export 'src/api_client/dio_client.dart';
+export 'src/api_client/dio_client_configuration.dart';
+
+export 'package:dio/dio.dart' show CancelToken, Interceptor, InterceptorsWrapper;

@@ -1,27 +1,61 @@
+import 'package:core/src/api_client/api_error.dart';
 import 'package:dio/dio.dart';
 import 'package:fpdart/fpdart.dart';
 
-final class ApiError {
-  const ApiError({this.statusCode});
-  final int? statusCode;
-}
-
 abstract interface class ApiClient {
-  Future<Either<ApiError, T>> get<T>({required String path, required T Function(Object?) decode});
-}
-
-final class ApiClientImpl implements ApiClient {
-  ApiClientImpl({required this._dio});
-  final Dio _dio;
-  @override
-  Future<Either<ApiError, T>> get<T>({required String path, required T Function(Object?) decode}) async {
-    try {
-      final response = await _dio.get<Object?>(path);
-      return Right(decode(response.data));
-    } on DioException catch (error) {
-      return Left(ApiError(statusCode: error.response?.statusCode));
-    } on Object {
-      return const Left(ApiError());
-    }
-  }
+  Future<Either<ApiError, T>> request<T>({
+    required String method,
+    required String path,
+    required T Function(Object?) decode,
+    Object? data,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
+  Future<Either<ApiError, T>> get<T>({
+    required String path,
+    required T Function(Object?) decode,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
+  Future<Either<ApiError, T>> post<T>({
+    required String path,
+    required T Function(Object?) decode,
+    Object? data,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
+  Future<Either<ApiError, T>> put<T>({
+    required String path,
+    required T Function(Object?) decode,
+    Object? data,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
+  Future<Either<ApiError, T>> patch<T>({
+    required String path,
+    required T Function(Object?) decode,
+    Object? data,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
+  Future<Either<ApiError, T>> delete<T>({
+    required String path,
+    required T Function(Object?) decode,
+    Object? data,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
+  Future<Either<ApiError, T>> head<T>({
+    required String path,
+    required T Function(Object?) decode,
+    Map<String, Object?>? queryParameters,
+    Map<String, Object?>? headers,
+    CancelToken? cancelToken,
+  });
 }

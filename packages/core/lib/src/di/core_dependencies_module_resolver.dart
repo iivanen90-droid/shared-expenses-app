@@ -1,3 +1,6 @@
+import 'package:core/src/api_client/api_client.dart';
+import 'package:core/src/api_client/dio_client.dart';
+import 'package:core/src/api_client/dio_client_configuration.dart';
 import 'package:core/src/analytics/analytics_tracker.dart';
 import 'package:core/src/analytics/crash_reporting_service.dart';
 import 'package:core/src/constants/environment_type.dart';
@@ -7,7 +10,10 @@ import 'package:core/src/startup/startup_status.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 abstract interface class CoreDependenciesModuleResolver {
-  static void register({required EnvironmentType environment}) {
+  static void register({
+    required EnvironmentType environment,
+    DioClientConfiguration dioConfiguration = const DioClientConfiguration(),
+  }) {
     DependencyProvider.registerLazySingleton<StartupStatus>(StartupStatusImpl.new);
     DependencyProvider.registerLazySingleton<AnalyticsTrackerFactory>(
       () => AnalyticsTrackerFactoryImpl(enabled: environment.isDebug),
@@ -16,6 +22,11 @@ abstract interface class CoreDependenciesModuleResolver {
       (screenName, _) => DependencyProvider.get<AnalyticsTrackerFactory>().create(screenName: screenName),
     );
     DependencyProvider.registerFactory<CrashReportingService>(CrashReportingServiceImpl.new);
+    DependencyProvider.registerLazySingleton<DioClient>(
+      () => DioClient(configuration: dioConfiguration, crashReporting: DependencyProvider.get<CrashReportingService>()),
+      dispose: (client) => client.close(force: true),
+    );
+    DependencyProvider.registerLazySingleton<ApiClient>(() => DependencyProvider.get<DioClient>());
     DependencyProvider.registerLazySingleton<PreferencesStorage>(
       () => PreferencesStorageImpl(preferences: SharedPreferencesAsync()),
     );
