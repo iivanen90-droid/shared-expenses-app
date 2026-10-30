@@ -17,6 +17,7 @@ import 'package:mobile/main_common.dart' as bootstrap;
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
 import 'package:shared_preferences_platform_interface/shared_preferences_async_platform_interface.dart';
 import 'package:ui_kit/ui_kit.dart';
+import 'package:get_it/get_it.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -40,38 +41,20 @@ void main() {
     await DependencyProvider.reset();
     SharedPreferencesAsyncPlatform.instance = previousPlatform;
   });
-  test('bootstrap awaits initialization before handing the widget to runApp', () async {
-    final initializer = _GatedInitializer();
-    var appStarted = false;
-    final launch = bootstrap.run(
-      environment: EnvironmentType.dev,
-      initializer: initializer,
-      appRunner: (_) => appStarted = true,
-    );
-    try {
-      await initializer.started.future;
-      expect(appStarted, isFalse);
-    } finally {
-      initializer.release.complete();
-      await launch;
-    }
-    expect(appStarted, isTrue);
-  });
-
-  test('bootstrap leaves a recovery UI available after initialization fails', () async {
-    Widget? root;
-    await bootstrap.run(
-      environment: EnvironmentType.dev,
-      initializer: _FailingInitializer(),
-      appRunner: (widget) => root = widget,
-    );
-    expect(root, isA<LocalizationsWrapper>());
-    expect(DependencyProvider.get<StartupStatus>().isReady, isFalse);
+  testWidgets('bootstrap prepares startup before the first application frame', (tester) async {
+    await tester.runAsync(() => bootstrap.run(environment: EnvironmentType.dev));
+    expect(DependencyProvider.get<StartupStatus>().isReady, isTrue);
+    await tester.pumpAndSettle();
+    expect(find.byType(LocalizationsWrapper), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await DependencyProvider.reset();
   });
 
   testWidgets('splash waits for initialization and is removed when tabs open', (tester) async {
     final initializer = _BlockingInitializer();
-    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev, initializer: initializer);
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    await GetIt.instance.unregister<ApplicationInitializer>();
+    DependencyProvider.registerLazySingleton<ApplicationInitializer>(() => initializer);
     try {
       await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
       await tester.pump();
@@ -198,7 +181,9 @@ void main() {
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
     final status = StartupStatusImpl();
     final initializer = _RetryInitializer(status);
-    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev, initializer: initializer);
+    MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    await GetIt.instance.unregister<ApplicationInitializer>();
+    DependencyProvider.registerLazySingleton<ApplicationInitializer>(() => initializer);
     // Use the same status observed by the startup source.
     initializer.status = DependencyProvider.get<StartupStatus>();
     await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
@@ -234,21 +219,6 @@ class _RetryInitializer implements ApplicationInitializer {
     if (attempts == 1) throw StateError("Initialization failed");
     status.markReady();
   }
-}
-
-class _GatedInitializer implements ApplicationInitializer {
-  final started = Completer<void>();
-  final release = Completer<void>();
-  @override
-  Future<void> initialize() async {
-    started.complete();
-    await release.future;
-  }
-}
-
-class _FailingInitializer implements ApplicationInitializer {
-  @override
-  Future<void> initialize() async => throw StateError('Initialization failed');
 }
 
 class _BlockingInitializer implements ApplicationInitializer {

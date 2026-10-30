@@ -13,7 +13,7 @@
 - Page → Cubit → Interactor → Repository → Source. Source/Repository/Interactor — interface + Impl.
   Constructor injection — required named параметри, поля приватні. Cubit не викликає repository.
 - Cubit успадковує SafeCubitWrapper. Один freezed-state зі status enum. Page створює Cubit через DI.
-- До runApp очікувати ApplicationInitializer.initialize(): обробники помилок і готовність preferences.
+- До runApp очікувати ApplicationInitializer.initialize(): обробники помилок і готовність запуску.
 - Три DI-resolver кожної фічі реєструються в common після core у порядку data → domain → ui.
 - Routes типізовані в router. Початок — splash; buildPlatformPage використовує SDK MaterialPage / CupertinoPage за платформою.
   StatefulShellRoute вже містить дві вкладки з окремими стеками. Не додавати бізнес-екрани поза завданням.
