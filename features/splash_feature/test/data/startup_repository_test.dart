@@ -23,6 +23,14 @@ void main() {
     status.markReady();
     expect((await repository.checkReadiness()).isRight(), isTrue);
   });
+  test('a prepared startup is read without invoking the initializer again', () async {
+    final status = StartupStatusImpl()..markReady();
+    final initializer = _Initializer();
+    final source = StartupSourceImpl(startupStatus: status, initializer: initializer);
+    expect(await source.isReady(), isTrue);
+    expect(await source.isReady(), isTrue);
+    verifyNever(initializer.initialize);
+  });
   test('source exceptions are mapped to Failure', () async {
     final source = _Source();
     final reporting = _CrashReporting();
