@@ -192,8 +192,8 @@ Installation, launch, and verification commands are in [README](../README.md).
 GoRouterConfig.config creates a router with initialLocation: /splash. App reads config once and disposes it.
 Root, home, and second Navigator keys are defined in GoRouterConfig; each TypedStatefulShellBranch
 references its own key. MainShellRoute uses @TypedStatefulShellRoute with the standard IndexedStack.
-MainShellPage receives child, currentIndex, and a callback; router calls goBranch without resetting
-initialLocation. Switching tabs, including reselecting the active tab, preserves its stack.
+MainShellPage receives StatefulNavigationShell, renders it as its body, and uses its currentIndex.
+The page calls goBranch directly from NavigationBar without resetting initialLocation. Switching tabs, including reselecting the active tab, preserves its stack.
 
 After successful initialization, splash calls context.goTo(const HomeRoute()). go replaces the route,
 so Back at a tab root does not reopen splash. No separate native splash has been added.
@@ -206,7 +206,10 @@ buildPlatformPage returns Flutter SDK MaterialPage on Android and CupertinoPage 
 Only transitions differ; widgets, AppTheme.main(), colors, and text remain standard Flutter Material.
 External material_ui/cupertino_ui packages are not reintroduced.
 Thin context.pushTo/goTo wrappers delegate to generated push/go without route type checks.
-main_shell_feature does not import other features and receives callbacks from router.
+main_shell_feature does not import other features. HomePage and SecondTabPage call their typed
+details routes directly in button handlers through the public router barrel, as SplashPage does.
+Route builders construct pages without navigation callbacks. main_shell_feature declares router
+for typed page navigation and go_router for StatefulNavigationShell; home_feature declares router.
 Other feature DI remains registered in common in data → domain → ui order.
 
 Generate after route changes from packages/router:

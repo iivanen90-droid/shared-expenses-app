@@ -18,6 +18,8 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
 - Register each feature's three DI resolvers in common after core, in data → domain → ui order.
 - Routes are typed in router. Start at splash; buildPlatformPage uses SDK MaterialPage / CupertinoPage by platform.
   StatefulShellRoute already provides two tabs with independent stacks. Do not add business screens outside the task.
+- Pages call typed routes through the public router barrel in UI handlers. Do not pass navigation callbacks from route builders.
+  MainShellPage receives StatefulNavigationShell and switches branches locally.
 - UI uses standard `package:flutter/material.dart`; access the theme through AppThemeProvider and context.colors/texts/icons.
   material_ui and cupertino_ui are not used directly; CupertinoPage only supplies iOS transitions for Material widgets.
   Use Flutter's default font without font assets. Strings use LocaleKeys and easy_localization; assets use flutter_gen.
