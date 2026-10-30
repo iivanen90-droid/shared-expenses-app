@@ -4,31 +4,19 @@ import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 
 final class ApplicationInitializerImpl implements ApplicationInitializer {
-  ApplicationInitializerImpl({
-    required this._startupStatus,
-    required this._preparePreferences,
-    required this._crashReporting,
-  });
+  ApplicationInitializerImpl({required this._startupStatus, required this._crashReporting});
   final StartupStatus _startupStatus;
-  final Future<void> Function() _preparePreferences;
   final CrashReportingService _crashReporting;
-  Future<void>? _initialization;
   FlutterExceptionHandler? _previousFlutterHandler;
   FlutterExceptionHandler? _flutterHandler;
   ErrorCallback? _previousPlatformHandler;
   ErrorCallback? _platformHandler;
 
   @override
-  Future<void> initialize() => _initialization ??= Future<void>.microtask(() async {
+  Future<void> initialize() async {
     _installErrorHandlers();
-    try {
-      await _preparePreferences();
-      _startupStatus.markReady();
-    } on Object {
-      _initialization = null;
-      rethrow;
-    }
-  });
+    _startupStatus.markReady();
+  }
 
   void _installErrorHandlers() {
     if (_flutterHandler != null) return;
