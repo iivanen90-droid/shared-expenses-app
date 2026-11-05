@@ -15,19 +15,13 @@ final class PreferencesStorageImpl implements PreferencesStorage {
   final SharedPreferencesAsync _preferences;
 
   @override
-  Future<bool?> readBool({required String key}) async {
-    return _preferences.getBool(key);
-  }
+  Future<bool?> readBool({required String key}) => _preferences.getBool(key);
 
   @override
-  Future<int?> readInt({required String key}) async {
-    return _preferences.getInt(key);
-  }
+  Future<int?> readInt({required String key}) => _preferences.getInt(key);
 
   @override
-  Future<String?> readString({required String key}) async {
-    return _preferences.getString(key);
-  }
+  Future<String?> readString({required String key}) => _preferences.getString(key);
 
   @override
   Future<void> writeBool({required String key, required bool value}) async {

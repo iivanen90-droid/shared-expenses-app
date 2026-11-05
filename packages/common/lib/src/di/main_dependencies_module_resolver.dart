@@ -1,3 +1,4 @@
+import 'package:main_shell_feature/main_shell_feature.dart';
 import 'package:core/core.dart';
 import 'package:home_feature/home_feature.dart';
 import 'package:splash_feature/splash_feature.dart';
@@ -18,6 +19,9 @@ abstract interface class MainDependenciesModuleResolver {
     SplashDataDependencyModuleResolver.register();
     SplashDomainDependencyModuleResolver.register();
     SplashUiDependencyModuleResolver.register();
+    MainShellDataDependencyModuleResolver.register();
+    MainShellDomainDependencyModuleResolver.register();
+    MainShellUiDependencyModuleResolver.register();
     HomeDataDependencyModuleResolver.register();
     HomeDomainDependencyModuleResolver.register();
     HomeUiDependencyModuleResolver.register();

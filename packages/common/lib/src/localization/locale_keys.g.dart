@@ -6,4 +6,8 @@ abstract class LocaleKeys {
   static const appTitle = 'appTitle';
   static const startupError = 'startupError';
   static const retry = 'retry';
+  static const homeTab = 'homeTab';
+  static const secondTab = 'secondTab';
+  static const openDetails = 'openDetails';
+  static const details = 'details';
 }

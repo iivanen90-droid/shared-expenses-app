@@ -1,6 +1,7 @@
 # splash_feature
-Модуль початкової оболонки Tricount. Правила: [CLAUDE.md](../../CLAUDE.md).
-Data → domain → ui; публічний доступ лише через `splash_feature.dart`.
-Не додавати бізнес-функції витрат без погодженого завдання.
-Генерація: `fvm dart run build_runner build --force-jit` із цього пакета.
-Перевірка: `fvm flutter test` із цього пакета.
+
+Initial Tricount shell module. Rules: [CLAUDE.md](../../CLAUDE.md).
+Data → domain → ui; public access is through `splash_feature.dart` only.
+Do not add expense business features without an agreed task.
+Generate from this package: `fvm dart run build_runner build --force-jit`.
+Verify from this package: `fvm flutter test`.
