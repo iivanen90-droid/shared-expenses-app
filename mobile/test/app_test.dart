@@ -4,7 +4,7 @@ import 'package:router/router.dart';
 import 'dart:convert';
 import 'dart:async';
 
-import 'package:flutter/services.dart' show rootBundle;
+import 'package:flutter/services.dart' show rootBundle, SystemChannels, MethodCall;
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:common/common.dart';
 import 'package:core/core.dart';
@@ -40,13 +40,27 @@ void main() {
   tearDown(() {
     SharedPreferencesAsyncPlatform.instance = previousPlatform;
   });
-  testWidgets('bootstrap prepares startup before the first application frame', (tester) async {
+  testWidgets('bootstrap requests portrait before DI and prepares the first frame', (tester) async {
+    var orientationRequests = 0;
+    final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     try {
-      await tester.runAsync(() => bootstrap.run(environment: EnvironmentType.dev));
+      await tester.runAsync(() async {
+        messenger.setMockMethodCallHandler(SystemChannels.platform, (MethodCall call) async {
+          if (call.method == 'SystemChrome.setPreferredOrientations') {
+            expect(call.arguments, ['DeviceOrientation.portraitUp']);
+            expect(DependencyProvider.isRegistered<ApplicationInitializer>(), isFalse);
+            orientationRequests++;
+          }
+          return null;
+        });
+        await bootstrap.run(environment: EnvironmentType.dev);
+      });
+      expect(orientationRequests, 1);
       expect(DependencyProvider.get<StartupStatus>().isReady, isTrue);
       await tester.pumpAndSettle();
       expect(find.byType(LocalizationsWrapper), findsOneWidget);
     } finally {
+      messenger.setMockMethodCallHandler(SystemChannels.platform, null);
       await _disposeApp(tester);
     }
   });
@@ -73,6 +87,25 @@ void main() {
         if (!initializer.release.isCompleted) initializer.release.complete();
       }
     }, initializer: initializer);
+  });
+
+  testWidgets('bootstrap prepares the application root on Android and iOS', (tester) async {
+    final originalPlatform = debugDefaultTargetPlatformOverride;
+    try {
+      for (final platform in [TargetPlatform.android, TargetPlatform.iOS]) {
+        debugDefaultTargetPlatformOverride = platform;
+        try {
+          await tester.runAsync(() => bootstrap.run(environment: EnvironmentType.dev));
+          expect(DependencyProvider.get<StartupStatus>().isReady, isTrue);
+          await tester.pumpAndSettle();
+          expect(find.byType(LocalizationsWrapper), findsOneWidget);
+        } finally {
+          await _disposeApp(tester);
+        }
+      }
+    } finally {
+      debugDefaultTargetPlatformOverride = originalPlatform;
+    }
   });
 
   testWidgets('both tabs preserve independent stacks including repeated tab selection', (tester) async {

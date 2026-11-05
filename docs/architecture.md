@@ -30,8 +30,9 @@ core, router, and ui_kit barrels. The common ↔ feature ↔ router relationship
 importing another package's `src/` is prohibited. Direct feature → feature imports are prohibited.
 Add future shared contracts to core.
 
-Startup: binding → DI (core, then each feature's data → domain → ui) →
-await ApplicationInitializer.initialize() → EasyLocalization → runApp → splash → home.
+Startup: binding → ensureSemantics in debug only → await EasyLocalization.ensureInitialized() →
+await SystemChrome.setPreferredOrientations([portraitUp]) → DI (core, then each feature's data → domain → ui) →
+await ApplicationInitializer.initialize() → runApp(LocalizationsWrapper(child: App())) → splash → tabs.
 The initializer installs error handlers and marks StartupStatus ready before runApp.
 Repeated calls do not reinstall handlers; there is no microtask or cached Future.
 If initialization fails, bootstrap records it through the local CrashReportingService and opens
@@ -224,3 +225,35 @@ without losing either stack.
 
 Theme, localization, and initialization from PR #14–16 are already merged into develop.
 Navigation changes must be integrated after prerequisite PRs and another check against the current develop.
+
+## Mobile shell and startup
+
+main.dart only selects EnvironmentType and calls the asynchronous run in main_common.dart.
+Debug semantics is enabled once for the app lifetime; release builds do not make this call.
+Localization is initialized before portraitUp, and the platform orientation request must complete
+before DI registration. MainDependenciesModuleResolver.register is currently synchronous;
+if it becomes asynchronous, await its Future before ApplicationInitializer.
+
+run awaits the initializer before creating the App tree. Successful initialization marks StartupStatus ready;
+splash checks that state and uses go to open the tabs without repeating initialization.
+The existing initialization recovery path remains: splash retries only when startup is not ready
+and shows an explicit retry button on failure.
+AppThemeProvider wraps MaterialApp.router; one router lives until App is disposed.
+Current localizationDelegates/supportedLocales/locale update the UI without creating a new router.
+
+Only ApplicationInitializer installs FlutterError.onError and PlatformDispatcher.onError;
+main_common does not create duplicate handlers. CrashReportingService receives original error/stackTrace;
+the local writer records a safe error type, stack, and fatal. No external crash SDK is connected.
+For a manual debug check, temporarily call FlutterError.reportError or trigger an unhandled async error,
+check tricount.errors, and remove the trigger before committing. VM service checks need no source changes.
+
+Manual Android/iOS checklist:
+
+1. Run the dev flavor: initial preparation completes before splash → tabs.
+2. Verify portrait orientation and uk/en through the localization context.
+3. Trigger intentional framework/async errors and verify error/stack/fatal in tricount.errors.
+4. Ensure no error triggers remain in source files after the check.
+
+iOS native launch requires macOS/Xcode; an iOS-platform widget test does not replace it.
+Flutter may ignore orientation lock for iPad multitasking and Android 16 large displays;
+this stage does not change multitasking configuration.

@@ -13,7 +13,8 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
 - Page → Cubit → Interactor → Repository → Source. Source/Repository/Interactor use interface + Impl.
   Use constructor injection with required named parameters and private fields. Cubits do not call repositories.
 - Cubits extend SafeCubitWrapper. Use one freezed state with a status enum. Pages create Cubits through DI.
-- Await ApplicationInitializer.initialize() before runApp: error handlers and startup readiness.
+- Bootstrap: binding → debug semantics → await localization → await portraitUp → DI → await ApplicationInitializer → runApp.
+  Only the initializer installs global error handlers; successful startup does not repeat on splash.
 - Register each feature's three DI resolvers in common after core, in data → domain → ui order.
 - Routes are typed in router. Start at splash; buildPlatformPage uses SDK MaterialPage / CupertinoPage by platform.
   StatefulShellRoute already provides two tabs with independent stacks. Do not add business screens outside the task.

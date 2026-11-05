@@ -255,8 +255,8 @@ Official instructions: [Codex review on GitHub](https://developers.openai.com/co
 Direct pushes, force pushes, deleting develop, and administrator bypass are prohibited.
 Agent rules are in [AGENTS.md](AGENTS.md); the development workflow is in [CLAUDE.md](CLAUDE.md).
 
-Application startup: Flutter binding → register core and feature DI →
-await ApplicationInitializer.initialize() (error handlers and startup readiness) → localization → runApp.
+Application startup: Flutter binding → debug semantics → localization → await portraitUp →
+register core and feature DI → await ApplicationInitializer.initialize() (error handlers and startup readiness) → runApp.
 Splash retains recovery after initialization failure. New Cubits extend SafeCubitWrapper,
 which ignores emit after close. Feature registration and error-handler lifecycle are documented
 in the [architecture](docs/architecture.md).
@@ -276,3 +276,8 @@ fvm dart run build_runner build --force-jit
 ~~~
 
 The manual switching/Back scenario is in the [navigation documentation](docs/architecture.md#tab-shell-and-routes).
+
+The mobile shell awaits localization and portraitUp before DI, then awaits the initializer before runApp.
+Only ApplicationInitializer installs global error handlers. Successful startup does not repeat on splash.
+The manual launch and local error-log checklist is in the
+[architecture](docs/architecture.md#mobile-shell-and-startup).
