@@ -7,11 +7,14 @@ import 'package:fpdart/fpdart.dart';
 
 class DioClient implements ApiClient {
   DioClient({
-    required DioClientConfiguration configuration,
+    DioClientConfiguration configuration = const DioClientConfiguration(),
     required this._crashReporting,
     List<Interceptor> interceptors = const [],
     HttpClientAdapter? adapter,
-  }) : _dio = _createDio(configuration, interceptors, adapter);
+  }) : _dio = Dio(_validatedOptions(configuration)) {
+    if (adapter != null) _dio.httpClientAdapter = adapter;
+    _dio.interceptors.addAll(interceptors);
+  }
 
   DioClient._({required this._dio, required this._crashReporting});
 
@@ -19,11 +22,7 @@ class DioClient implements ApiClient {
   final CrashReportingService _crashReporting;
   bool _closed = false;
 
-  static Dio _createDio(
-    DioClientConfiguration configuration,
-    List<Interceptor> interceptors,
-    HttpClientAdapter? adapter,
-  ) {
+  static BaseOptions _validatedOptions(DioClientConfiguration configuration) {
     final uri = Uri.tryParse(configuration.baseUrl);
     if (configuration.baseUrl.isNotEmpty &&
         (uri == null || !uri.hasAuthority || (uri.scheme != 'http' && uri.scheme != 'https'))) {
@@ -32,18 +31,13 @@ class DioClient implements ApiClient {
     for (final timeout in [configuration.connectTimeout, configuration.sendTimeout, configuration.receiveTimeout]) {
       if (timeout <= Duration.zero) throw ArgumentError('Network timeouts must be positive.');
     }
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: configuration.baseUrl,
-        connectTimeout: configuration.connectTimeout,
-        sendTimeout: configuration.sendTimeout,
-        receiveTimeout: configuration.receiveTimeout,
-        headers: Map<String, Object?>.of(configuration.headers),
-      ),
+    return BaseOptions(
+      baseUrl: configuration.baseUrl,
+      connectTimeout: configuration.connectTimeout,
+      sendTimeout: configuration.sendTimeout,
+      receiveTimeout: configuration.receiveTimeout,
+      headers: Map<String, Object?>.of(configuration.headers),
     );
-    if (adapter != null) dio.httpClientAdapter = adapter;
-    dio.interceptors.addAll(interceptors);
-    return dio;
   }
 
   void addInterceptor(Interceptor interceptor) {
@@ -57,8 +51,7 @@ class DioClient implements ApiClient {
     _dio.close(force: force);
   }
 
-  @override
-  Future<Either<ApiError, T>> request<T>({
+  Future<Either<ApiError, T>> _execute<T>({
     required String method,
     required String path,
     required T Function(Object?) decode,
@@ -121,7 +114,7 @@ class DioClient implements ApiClient {
     Map<String, Object?>? queryParameters,
     Map<String, Object?>? headers,
     CancelToken? cancelToken,
-  }) => request(
+  }) => _execute(
     method: 'GET',
     path: path,
     decode: decode,
@@ -137,42 +130,8 @@ class DioClient implements ApiClient {
     Map<String, Object?>? queryParameters,
     Map<String, Object?>? headers,
     CancelToken? cancelToken,
-  }) => request(
+  }) => _execute(
     method: 'POST',
-    path: path,
-    decode: decode,
-    data: data,
-    queryParameters: queryParameters,
-    headers: headers,
-    cancelToken: cancelToken,
-  );
-  @override
-  Future<Either<ApiError, T>> put<T>({
-    required String path,
-    required T Function(Object?) decode,
-    Object? data,
-    Map<String, Object?>? queryParameters,
-    Map<String, Object?>? headers,
-    CancelToken? cancelToken,
-  }) => request(
-    method: 'PUT',
-    path: path,
-    decode: decode,
-    data: data,
-    queryParameters: queryParameters,
-    headers: headers,
-    cancelToken: cancelToken,
-  );
-  @override
-  Future<Either<ApiError, T>> patch<T>({
-    required String path,
-    required T Function(Object?) decode,
-    Object? data,
-    Map<String, Object?>? queryParameters,
-    Map<String, Object?>? headers,
-    CancelToken? cancelToken,
-  }) => request(
-    method: 'PATCH',
     path: path,
     decode: decode,
     data: data,
@@ -188,26 +147,11 @@ class DioClient implements ApiClient {
     Map<String, Object?>? queryParameters,
     Map<String, Object?>? headers,
     CancelToken? cancelToken,
-  }) => request(
+  }) => _execute(
     method: 'DELETE',
     path: path,
     decode: decode,
     data: data,
-    queryParameters: queryParameters,
-    headers: headers,
-    cancelToken: cancelToken,
-  );
-  @override
-  Future<Either<ApiError, T>> head<T>({
-    required String path,
-    required T Function(Object?) decode,
-    Map<String, Object?>? queryParameters,
-    Map<String, Object?>? headers,
-    CancelToken? cancelToken,
-  }) => request(
-    method: 'HEAD',
-    path: path,
-    decode: decode,
     queryParameters: queryParameters,
     headers: headers,
     cancelToken: cancelToken,

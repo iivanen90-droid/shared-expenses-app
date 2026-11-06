@@ -264,17 +264,18 @@ DioClient implements ApiClient for future data/source services. Public core.dart
 DioClientConfiguration, ApiError/ApiErrorKind, and the required CancelToken/Interceptor/InterceptorsWrapper.
 Dio was already present in core and the root pubspec; this stage does not change its version or lockfile.
 
-Pass configuration to the constructor, CoreDependenciesModuleResolver.register,
-or MainDependenciesModuleResolver.register through dioConfiguration:
-baseUrl, connectTimeout (15 s), sendTimeout (30 s), receiveTimeout (30 s), and headers.
+DioClient uses one default configuration. A caller that creates its own client can pass
+DioClientConfiguration to its constructor to override baseUrl, connectTimeout (15 s),
+sendTimeout (30 s), receiveTimeout (30 s), or headers.
 Timeouts must be positive; a nonempty baseUrl must be an absolute HTTP(S) URL.
 The client copies the header map; per-request headers do not change subsequent requests' settings.
 The backend URL is not defined yet: default baseUrl is empty and startup makes no requests.
 A relative request without a base URL returns Left with kind configuration without transport;
 an absolute HTTP(S) URL can be provided explicitly. No real endpoints or business services were added.
 
-Available methods: get/post/put/patch/delete/head and request with method, data, queryParameters,
-headers, cancelToken, and required decode(Object?). The result is Future<Either<ApiError,T>>.
+The public HTTP methods are get, post, and delete. They share request execution and accept
+queryParameters, headers, cancelToken, and required decode(Object?). Post and delete also accept data.
+The result is Future<Either<ApiError,T>>.
 ApiError extends Failure, allowing repositories to map transport errors to scenario-specific failures.
 Right contains the decoder result; Left contains a safe kind and statusCode when available.
 ApiError includes no response body, URL, headers, or exception message.
@@ -288,7 +289,7 @@ The local writer records only a safe type, stack, and fatal, without request/res
 Cancellation is not recorded as a crash. Reporter failure does not turn Either into an unhandled exception.
 LogInterceptor is not added automatically; new interceptors must not log secrets or financial data.
 
-Core DI registers one lazy DioClient and an ApiClient alias to the same instance.
+Core DI registers a single lazy ApiClient backed by DioClient.
 await DependencyProvider.reset() closes an instantiated client through close(force: true);
 reset does not instantiate an unused client. close is idempotent; subsequent requests return kind closed.
 Owners must close clients they create themselves. ApiClientImpl(dio: ...) remains a compatible constructor

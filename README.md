@@ -284,10 +284,10 @@ The manual launch and local error-log checklist is in the
 
 ## Future API requests
 
-Core provides DioClient with GET/POST/PUT/PATCH/DELETE/HEAD, configurable baseUrl, timeouts, and headers.
-Pass configuration through dioConfiguration to MainDependenciesModuleResolver.register.
-ApiClient and DioClient in DI refer to the same lazy singleton. The result is Either<ApiError,T>,
-where ApiError is a Failure. The supplied decode transforms data; each feature will define its business failures.
+Core DI provides one lazy ApiClient with GET, POST, and DELETE. DioClient uses shared defaults
+for baseUrl, timeouts, and headers. A caller that creates its own client can override them at construction.
+The result is Either<ApiError,T>, where ApiError is a Failure. The supplied decode transforms data;
+each feature will define its business failures.
 
 No server URL or endpoints are configured; the app makes no API requests at startup.
 Network tests use a fake HttpClientAdapter without Internet requests.

@@ -91,22 +91,19 @@ void main() {
     expect(adapter.requests.last.headers['x-shared'], 'original');
     expect(adapter.requests.last.headers.containsKey('x-request'), isFalse);
   });
-  for (final method in ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD']) {
+  for (final method in ['GET', 'POST', 'DELETE']) {
     test('$method forwards method, body and query', () async {
       const data = {'sample': true};
       final Future<Either<ApiError, int>> pending = switch (method) {
         'GET' => client.get(path: 'resource', queryParameters: {'p': 1}, decode: (_) => 7),
         'POST' => client.post(path: 'resource', data: data, queryParameters: {'p': 1}, decode: (_) => 7),
-        'PUT' => client.put(path: 'resource', data: data, queryParameters: {'p': 1}, decode: (_) => 7),
-        'PATCH' => client.patch(path: 'resource', data: data, queryParameters: {'p': 1}, decode: (_) => 7),
-        'DELETE' => client.delete(path: 'resource', data: data, queryParameters: {'p': 1}, decode: (_) => 7),
-        _ => client.head(path: 'resource', queryParameters: {'p': 1}, decode: (_) => 7),
+        _ => client.delete(path: 'resource', data: data, queryParameters: {'p': 1}, decode: (_) => 7),
       };
       expect((await pending).isRight(), isTrue);
       final request = adapter.requests.single;
       expect(request.method, method);
       expect(request.queryParameters['p'], 1);
-      expect(request.data, method == 'GET' || method == 'HEAD' ? isNull : data);
+      expect(request.data, method == 'GET' ? isNull : data);
     });
   }
   final types = <DioExceptionType, ApiErrorKind>{
@@ -230,7 +227,7 @@ void main() {
   });
   test('an unconfigured backend rejects relative requests locally', () async {
     client.close();
-    client = DioClient(configuration: const DioClientConfiguration(), crashReporting: reporting, adapter: adapter);
+    client = DioClient(crashReporting: reporting, adapter: adapter);
     final result = await client.get<void>(path: '/resource', decode: (_) {});
     expect(result.fold((error) => error.kind, (_) => null), ApiErrorKind.configuration);
     expect(adapter.requests, isEmpty);
@@ -300,26 +297,11 @@ void main() {
     expect(adapter.requests, isEmpty);
     expect(() => client.addInterceptor(InterceptorsWrapper()), throwsStateError);
   });
-  test('DI shares one configured client through both types and closes it on reset', () async {
-    CoreDependenciesModuleResolver.register(
-      environment: EnvironmentType.dev,
-      dioConfiguration: const DioClientConfiguration(baseUrl: 'https://example.invalid/api/'),
-    );
-    final registered = DependencyProvider.get<DioClient>();
-    expect(DependencyProvider.get<DioClient>(), same(registered));
+  test('DI shares one ApiClient and closes it on reset', () async {
+    CoreDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    final registered = DependencyProvider.get<ApiClient>();
     expect(DependencyProvider.get<ApiClient>(), same(registered));
-    registered.addInterceptor(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          expect(options.uri.toString(), 'https://example.invalid/api/resource');
-          handler.resolve(Response<Object?>(requestOptions: options, data: true));
-        },
-      ),
-    );
-    expect(
-      (await registered.get<bool>(path: 'resource', decode: (data) => data as bool)).getOrElse((_) => false),
-      isTrue,
-    );
+    expect(DependencyProvider.isRegistered<DioClient>(), isFalse);
     await DependencyProvider.reset();
     expect(
       (await registered.get<void>(path: 'resource', decode: (_) {})).fold((error) => error.kind, (_) => null),

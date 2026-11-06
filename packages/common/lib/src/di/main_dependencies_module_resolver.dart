@@ -5,11 +5,8 @@ import 'package:splash_feature/splash_feature.dart';
 import 'package:common/src/initialization/application_initializer.dart';
 
 abstract interface class MainDependenciesModuleResolver {
-  static void register({
-    required EnvironmentType environment,
-    DioClientConfiguration dioConfiguration = const DioClientConfiguration(),
-  }) {
-    CoreDependenciesModuleResolver.register(environment: environment, dioConfiguration: dioConfiguration);
+  static void register({required EnvironmentType environment}) {
+    CoreDependenciesModuleResolver.register(environment: environment);
     DependencyProvider.registerLazySingleton<ApplicationInitializer>(
       () => ApplicationInitializerImpl(
         startupStatus: DependencyProvider.get<StartupStatus>(),
