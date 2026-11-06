@@ -257,3 +257,40 @@ Manual Android/iOS checklist:
 iOS native launch requires macOS/Xcode; an iOS-platform widget test does not replace it.
 Flutter may ignore orientation lock for iPad multitasking and Android 16 large displays;
 this stage does not change multitasking configuration.
+
+## Network client: core
+
+DioClient implements ApiClient for future data/source services. Public core.dart exports both types,
+DioClientConfiguration, ApiError/ApiErrorKind, and the required CancelToken/Interceptor/InterceptorsWrapper.
+Dio was already present in core and the root pubspec; this stage does not change its version or lockfile.
+
+DioClient uses one default configuration. A caller that creates its own client can pass
+DioClientConfiguration to its constructor to override baseUrl, connectTimeout (15 s),
+sendTimeout (30 s), receiveTimeout (30 s), or headers.
+Timeouts must be positive; a nonempty baseUrl must be an absolute HTTP(S) URL.
+The client copies the header map; per-request headers do not change subsequent requests' settings.
+The backend URL is not defined yet: default baseUrl is empty and startup makes no requests.
+A relative request without a base URL returns Left with kind configuration without transport;
+an absolute HTTP(S) URL can be provided explicitly. No real endpoints or business services were added.
+
+The public HTTP methods are get, post, and delete. They share request execution and accept
+queryParameters, headers, cancelToken, and required decode(Object?). Post and delete also accept data.
+The result is Future<Either<ApiError,T>>.
+ApiError extends Failure, allowing repositories to map transport errors to scenario-specific failures.
+Right contains the decoder result; Left contains a safe kind and statusCode when available.
+ApiError includes no response body, URL, headers, or exception message.
+HTTP errors do not reach the decoder; JSON/decoder errors use kind decoding.
+Network, timeout, certificate, HTTP, cancellation, and unknown failures are distinguished.
+There are no automatic retries, authentication, refresh tokens, or hidden write retries.
+
+Supply interceptors to the constructor or add them with addInterceptor.
+Transport and decoder errors are forwarded to the existing CrashReportingService with original error/stackTrace.
+The local writer records only a safe type, stack, and fatal, without request/response payloads, URLs, or headers.
+Cancellation is not recorded as a crash. Reporter failure does not turn Either into an unhandled exception.
+LogInterceptor is not added automatically; new interceptors must not log secrets or financial data.
+
+Core DI registers a single lazy ApiClient backed by DioClient.
+await DependencyProvider.reset() closes an instantiated client through close(force: true);
+reset does not instantiate an unused client. close is idempotent; subsequent requests return kind closed.
+Owners must close clients they create themselves. ApiClientImpl(dio: ...) remains a compatible constructor
+for the previous API; new code should use DioClientConfiguration and injected CrashReportingService.

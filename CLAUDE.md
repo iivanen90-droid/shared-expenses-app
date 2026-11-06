@@ -23,6 +23,8 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
 - UI uses standard `package:flutter/material.dart`; access the theme through AppThemeProvider and context.colors/texts/icons.
   material_ui and cupertino_ui are not used directly; CupertinoPage only supplies iOS transitions for Material widgets.
   Use Flutter's default font without font assets. Strings use LocaleKeys and easy_localization; assets use flutter_gen.
+- HTTP in data/source uses core ApiClient / DioClient with decode and Either<ApiError,T>.
+  Do not log URLs, headers, or payloads, or add hidden write retries. Supply configuration externally.
 - Use Either<Failure,T> and handle exceptions in data/domain. Add DTO/json_serializable and ObjectBox only with
   an agreed API or structured data. Do not add empty network/database scenarios.
 - Track analytics from Cubits using screen-specific event classes. Do not log financial/personal payloads or exception messages.

@@ -1,3 +1,5 @@
+import 'package:core/src/api_client/api_client.dart';
+import 'package:core/src/api_client/dio_client.dart';
 import 'package:core/src/analytics/analytics_tracker.dart';
 import 'package:core/src/analytics/crash_reporting_service.dart';
 import 'package:core/src/constants/environment_type.dart';
@@ -16,6 +18,12 @@ abstract interface class CoreDependenciesModuleResolver {
       (screenName, _) => DependencyProvider.get<AnalyticsTrackerFactory>().create(screenName: screenName),
     );
     DependencyProvider.registerFactory<CrashReportingService>(CrashReportingServiceImpl.new);
+    DependencyProvider.registerLazySingleton<ApiClient>(
+      () => DioClient(crashReporting: DependencyProvider.get<CrashReportingService>()),
+      dispose: (client) {
+        if (client is DioClient) client.close(force: true);
+      },
+    );
     DependencyProvider.registerLazySingleton<PreferencesStorage>(
       () => PreferencesStorageImpl(preferences: SharedPreferencesAsync()),
     );

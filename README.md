@@ -281,3 +281,15 @@ The mobile shell awaits localization and portraitUp before DI, then awaits the i
 Only ApplicationInitializer installs global error handlers. Successful startup does not repeat on splash.
 The manual launch and local error-log checklist is in the
 [architecture](docs/architecture.md#mobile-shell-and-startup).
+
+## Future API requests
+
+Core DI provides one lazy ApiClient with GET, POST, and DELETE. DioClient uses shared defaults
+for baseUrl, timeouts, and headers. A caller that creates its own client can override them at construction.
+The result is Either<ApiError,T>, where ApiError is a Failure. The supplied decode transforms data;
+each feature will define its business failures.
+
+No server URL or endpoints are configured; the app makes no API requests at startup.
+Network tests use a fake HttpClientAdapter without Internet requests.
+Configuration, interceptors, logging, and cleanup are described in the
+[client documentation](docs/architecture.md#network-client-core).
