@@ -16,7 +16,7 @@ Each member uses `resolution: workspace`, `publish_to: 'none'`, and its own `lib
 | `packages/common/` | DI composition, ApplicationInitializer, SafeCubitWrapper, Ukrainian/English localization |
 | `packages/router/` | Typed splash/tab routes, separate Navigators, navigation extensions |
 | `features/splash_feature/` | Readiness checks, loading/loaded/failed, retry after failure, transition to home |
-| `features/main_shell_feature/` | Two-tab shell, placeholder pages, data/domain/ui resolvers |
+| `features/main_shell_feature/` | Home/Profile tab shell, blank Profile page, data/domain/ui resolvers |
 | `features/home_feature/` | Existing home screen, state, and opened event; no financial features |
 | `envs/` | Safe dev/prod examples; private configurations are ignored by Git |
 | `tools/` | Workspace commands, codegen, localization, formatting, analysis, and tests |
@@ -197,19 +197,18 @@ The page calls goBranch directly from NavigationBar without resetting initialLoc
 
 After successful initialization, splash calls context.goTo(const HomeRoute()). go replaces the route,
 so Back at a tab root does not reopen splash. No separate native splash has been added.
-The first tab /home retains HomePage; the second /second contains a placeholder screen.
-/home/details and /second/details are placeholders for verifying nested stacks, not expense scenarios.
-Buttons open them through context.pushTo; Back closes a page only in the active Navigator.
+Home at /home reads demo groups from the local source through its repository, interactor, and Cubit.
+An empty list shows a localized message. New Tricount opens /home/new through context.pushTo within
+Home's stack. It has no form or persistence. Profile at /profile is a blank placeholder.
 State is not restored after process termination.
 
 buildPlatformPage returns Flutter SDK MaterialPage on Android and CupertinoPage on iOS as in the guide.
 Only transitions differ; widgets, AppTheme.main(), colors, and text remain standard Flutter Material.
 External material_ui/cupertino_ui packages are not reintroduced.
 Thin context.pushTo/goTo wrappers delegate to generated push/go without route type checks.
-main_shell_feature does not import other features. HomePage and SecondTabPage call their typed
-details routes directly in button handlers through the public router barrel, as SplashPage does.
-Route builders construct pages without navigation callbacks. main_shell_feature declares router
-for typed page navigation and go_router for StatefulNavigationShell; home_feature declares router.
+main_shell_feature does not import other features. HomePage uses the public router barrel in its button
+handler. Route builders construct pages without navigation callbacks. main_shell_feature declares
+go_router for StatefulNavigationShell; home_feature declares router.
 Other feature DI remains registered in common in data → domain → ui order.
 
 Generate after route changes from packages/router:
@@ -218,10 +217,9 @@ Generate after route changes from packages/router:
 fvm dart run build_runner build --force-jit
 ~~~
 
-Manual check: splash → first tab → Open details → second tab → Open details → first tab
-(its details remain open) → Back → second tab (its details remain open) → Back.
-Back from a tab root must not reopen splash. Mobile tests also verify language changes
-without losing either stack.
+Manual check: splash → Home → New Tricount → Profile → Home (the placeholder remains open) → Back.
+Back from the Home root must not reopen splash. Mobile tests also verify that a language change
+updates the tab labels and open placeholder without losing the Home stack.
 
 Theme, localization, and initialization from PR #14–16 are already merged into develop.
 Navigation changes must be integrated after prerequisite PRs and another check against the current develop.

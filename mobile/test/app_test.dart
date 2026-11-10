@@ -108,74 +108,72 @@ void main() {
     }
   });
 
-  testWidgets('both tabs preserve independent stacks including repeated tab selection', (tester) async {
+  testWidgets('Home keeps the New Tricount page open after switching tabs and reselecting Home', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('home_open_details'));
+      final navigation = find.byType(NavigationBar);
+      expect(tester.widget<NavigationBar>(navigation).destinations, hasLength(2));
+      await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
       await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      final placeholder = find.bySemanticsIdentifier('new_tricount_title');
+      expect(placeholder, findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
       expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isTrue);
-      await tester.tap(find.bySemanticsIdentifier('tab_second'));
+      await tester.tap(find.bySemanticsIdentifier('tab_profile'));
       await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('second_tab_title'), findsOneWidget);
-      await tester.tap(find.bySemanticsIdentifier('second_open_details'));
-      await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('second_details'), findsOneWidget);
-      expect(GoRouterConfig.secondNavigatorKey.currentState?.canPop(), isTrue);
+      final profile = find.bySemanticsIdentifier('profile_page');
+      final profileElement = tester.element(profile);
+      expect(placeholder, findsNothing);
+      expect(GoRouterConfig.profileNavigatorKey.currentState?.canPop(), isFalse);
       await tester.tap(find.bySemanticsIdentifier('tab_home'));
       await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      expect(placeholder, findsOneWidget);
       await tester.tap(find.bySemanticsIdentifier('tab_home'));
       await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
+      expect(placeholder, findsOneWidget);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
-      await tester.tap(find.bySemanticsIdentifier('tab_second'));
+      expect(find.text('Barcelona'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('tab_profile'));
       await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('second_details'), findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('second_tab_title'), findsOneWidget);
-      expect(GoRouterConfig.rootNavigatorKey.currentState?.canPop(), isFalse);
+      expect(tester.element(profile), same(profileElement));
       expect(tester.takeException(), isNull);
     });
   });
 
-  testWidgets('language changes update both preserved tabs without resetting their stacks', (tester) async {
+  testWidgets('language changes update both tab labels and the open New Tricount page', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('home_open_details'));
+      await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('tab_second'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('second_open_details'));
-      await tester.pumpAndSettle();
-      final context = tester.element(find.bySemanticsIdentifier('second_details'));
+      final placeholder = find.bySemanticsIdentifier('new_tricount_title');
+      final context = tester.element(placeholder);
+      expect(find.text('Новий Tricount'), findsOneWidget);
+      expect(find.text('Головна'), findsOneWidget);
+      expect(find.text('Профіль'), findsOneWidget);
       await context.setLocale(const Locale('en'));
       await tester.pumpAndSettle();
       expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Second tab'), findsOneWidget);
-      expect(find.bySemanticsIdentifier('second_details'), findsOneWidget);
-      await tester.tap(find.bySemanticsIdentifier('tab_home'));
-      await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('home_details'), findsOneWidget);
-      expect(find.text('Details'), findsWidgets);
+      expect(find.text('Profile'), findsOneWidget);
+      expect(find.text('New Tricount'), findsOneWidget);
+      expect(tester.element(placeholder), same(context));
       expect(tester.takeException(), isNull);
     });
   });
 
-  testWidgets('splash opens the localized home screen through the real DI and router', (tester) async {
+  testWidgets('splash opens themed Home with demo groups through the real DI and router', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
-      expect(find.text('Спільні витрати'), findsOneWidget);
+      expect(find.text('Tricount'), findsOneWidget);
+      expect(find.text('Barcelona'), findsOneWidget);
+      expect(find.text('Kyiv'), findsOneWidget);
+      expect(find.text('Carpathians'), findsOneWidget);
+      expect(find.text('У вас ще немає груп'), findsNothing);
+      expect(find.text('Новий Tricount'), findsOneWidget);
       final context = tester.element(find.bySemanticsIdentifier('home_title'));
       expect(Theme.of(context).colorScheme.primary, context.colors.primary);
-      expect(tester.widget<Text>(find.text('Спільні витрати')).style, context.texts.title);
-      await context.setLocale(const Locale('en'));
-      await tester.pumpAndSettle();
-      expect(find.text('Shared expenses'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -187,7 +185,7 @@ void main() {
       await _withApp(tester, translations, () async {
         await tester.pumpAndSettle();
         expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
-        expect(find.text('Спільні витрати'), findsOneWidget);
+        expect(find.text('Tricount'), findsOneWidget);
         final context = tester.element(find.bySemanticsIdentifier('home_title'));
         expect(ModalRoute.of(context)?.settings, isA<CupertinoPage<void>>());
         expect(tester.takeException(), isNull);

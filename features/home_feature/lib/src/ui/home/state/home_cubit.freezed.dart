@@ -14,6 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$HomeState {
   HomeStatus get status;
+  List<HomeGroup> get groups;
 
   /// Create a copy of HomeState
   /// with the given fields replaced by the non-null parameter values.
@@ -26,15 +27,16 @@ mixin _$HomeState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is HomeState &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            const DeepCollectionEquality().equals(other.groups, groups));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status);
+  int get hashCode => Object.hash(runtimeType, status, const DeepCollectionEquality().hash(groups));
 
   @override
   String toString() {
-    return 'HomeState(status: $status)';
+    return 'HomeState(status: $status, groups: $groups)';
   }
 }
 
@@ -42,7 +44,7 @@ mixin _$HomeState {
 abstract mixin class $HomeStateCopyWith<$Res> {
   factory $HomeStateCopyWith(HomeState value, $Res Function(HomeState) _then) = _$HomeStateCopyWithImpl;
   @useResult
-  $Res call({HomeStatus status});
+  $Res call({HomeStatus status, List<HomeGroup> groups});
 }
 
 /// @nodoc
@@ -56,13 +58,17 @@ class _$HomeStateCopyWithImpl<$Res> implements $HomeStateCopyWith<$Res> {
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
-  $Res call({Object? status = null}) {
+  $Res call({Object? status = null, Object? groups = null}) {
     return _then(
       _self.copyWith(
         status: null == status
             ? _self.status
             : status // ignore: cast_nullable_to_non_nullable
                   as HomeStatus,
+        groups: null == groups
+            ? _self.groups
+            : groups // ignore: cast_nullable_to_non_nullable
+                  as List<HomeGroup>,
       ),
     );
   }
@@ -154,13 +160,13 @@ extension HomeStatePatterns on HomeState {
 
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>(
-    TResult Function(HomeStatus status)? $default, {
+    TResult Function(HomeStatus status, List<HomeGroup> groups)? $default, {
     required TResult orElse(),
   }) {
     final _that = this;
     switch (_that) {
       case _HomeState() when $default != null:
-        return $default(_that.status);
+        return $default(_that.status, _that.groups);
       case _:
         return orElse();
     }
@@ -180,11 +186,11 @@ extension HomeStatePatterns on HomeState {
   /// ```
 
   @optionalTypeArgs
-  TResult when<TResult extends Object?>(TResult Function(HomeStatus status) $default) {
+  TResult when<TResult extends Object?>(TResult Function(HomeStatus status, List<HomeGroup> groups) $default) {
     final _that = this;
     switch (_that) {
       case _HomeState():
-        return $default(_that.status);
+        return $default(_that.status, _that.groups);
       case _:
         throw StateError('Unexpected subclass');
     }
@@ -203,11 +209,11 @@ extension HomeStatePatterns on HomeState {
   /// ```
 
   @optionalTypeArgs
-  TResult? whenOrNull<TResult extends Object?>(TResult? Function(HomeStatus status)? $default) {
+  TResult? whenOrNull<TResult extends Object?>(TResult? Function(HomeStatus status, List<HomeGroup> groups)? $default) {
     final _that = this;
     switch (_that) {
       case _HomeState() when $default != null:
-        return $default(_that.status);
+        return $default(_that.status, _that.groups);
       case _:
         return null;
     }
@@ -217,11 +223,14 @@ extension HomeStatePatterns on HomeState {
 /// @nodoc
 
 class _HomeState implements HomeState {
-  const _HomeState({this.status = HomeStatus.loading});
+  const _HomeState({this.status = HomeStatus.loading, this.groups = const <HomeGroup>[]});
 
   @override
   @JsonKey()
   final HomeStatus status;
+  @override
+  @JsonKey()
+  final List<HomeGroup> groups;
 
   /// Create a copy of HomeState
   /// with the given fields replaced by the non-null parameter values.
@@ -235,15 +244,16 @@ class _HomeState implements HomeState {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _HomeState &&
-            (identical(other.status, status) || other.status == status));
+            (identical(other.status, status) || other.status == status) &&
+            const DeepCollectionEquality().equals(other.groups, groups));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, status);
+  int get hashCode => Object.hash(runtimeType, status, const DeepCollectionEquality().hash(groups));
 
   @override
   String toString() {
-    return 'HomeState(status: $status)';
+    return 'HomeState(status: $status, groups: $groups)';
   }
 }
 
@@ -252,7 +262,7 @@ abstract mixin class _$HomeStateCopyWith<$Res> implements $HomeStateCopyWith<$Re
   factory _$HomeStateCopyWith(_HomeState value, $Res Function(_HomeState) _then) = __$HomeStateCopyWithImpl;
   @override
   @useResult
-  $Res call({HomeStatus status});
+  $Res call({HomeStatus status, List<HomeGroup> groups});
 }
 
 /// @nodoc
@@ -266,13 +276,17 @@ class __$HomeStateCopyWithImpl<$Res> implements _$HomeStateCopyWith<$Res> {
   /// with the given fields replaced by the non-null parameter values.
   @override
   @pragma('vm:prefer-inline')
-  $Res call({Object? status = null}) {
+  $Res call({Object? status = null, Object? groups = null}) {
     return _then(
       _HomeState(
         status: null == status
             ? _self.status
             : status // ignore: cast_nullable_to_non_nullable
                   as HomeStatus,
+        groups: null == groups
+            ? _self.groups
+            : groups // ignore: cast_nullable_to_non_nullable
+                  as List<HomeGroup>,
       ),
     );
   }

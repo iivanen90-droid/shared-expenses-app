@@ -7,6 +7,8 @@ abstract interface class HomeUiDependencyModuleResolver {
     DependencyProvider.registerFactory<HomeAnalytics>(
       () => HomeAnalyticsImpl(trackerFactory: DependencyProvider.get()),
     );
-    DependencyProvider.registerFactory<HomeCubit>(() => HomeCubit(analytics: DependencyProvider.get()));
+    DependencyProvider.registerFactory<HomeCubit>(
+      () => HomeCubit(analytics: DependencyProvider.get(), interactor: DependencyProvider.get()),
+    );
   }
 }

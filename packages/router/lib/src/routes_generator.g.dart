@@ -40,24 +40,13 @@ RouteBase get $mainShellRoute => StatefulShellRouteData.$route(
           path: '/home',
           hasOverriddenOnExit: false,
           factory: $HomeRoute._fromState,
-          routes: [
-            GoRouteData.$route(path: 'details', hasOverriddenOnExit: false, factory: $HomeDetailsRoute._fromState),
-          ],
+          routes: [GoRouteData.$route(path: 'new', hasOverriddenOnExit: false, factory: $NewTricountRoute._fromState)],
         ),
       ],
     ),
     StatefulShellBranchData.$branch(
-      navigatorKey: SecondBranch.$navigatorKey,
-      routes: [
-        GoRouteData.$route(
-          path: '/second',
-          hasOverriddenOnExit: false,
-          factory: $SecondTabRoute._fromState,
-          routes: [
-            GoRouteData.$route(path: 'details', hasOverriddenOnExit: false, factory: $SecondDetailsRoute._fromState),
-          ],
-        ),
-      ],
+      navigatorKey: ProfileBranch.$navigatorKey,
+      routes: [GoRouteData.$route(path: '/profile', hasOverriddenOnExit: false, factory: $ProfileRoute._fromState)],
     ),
   ],
 );
@@ -85,30 +74,11 @@ mixin $HomeRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-mixin $HomeDetailsRoute on GoRouteData {
-  static HomeDetailsRoute _fromState(GoRouterState state) => const HomeDetailsRoute();
+mixin $NewTricountRoute on GoRouteData {
+  static NewTricountRoute _fromState(GoRouterState state) => const NewTricountRoute();
 
   @override
-  String get location => GoRouteData.$location('/home/details');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) => context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $SecondTabRoute on GoRouteData {
-  static SecondTabRoute _fromState(GoRouterState state) => const SecondTabRoute();
-
-  @override
-  String get location => GoRouteData.$location('/second');
+  String get location => GoRouteData.$location('/home/new');
 
   @override
   void go(BuildContext context) => context.go(location);
@@ -123,11 +93,11 @@ mixin $SecondTabRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
-mixin $SecondDetailsRoute on GoRouteData {
-  static SecondDetailsRoute _fromState(GoRouterState state) => const SecondDetailsRoute();
+mixin $ProfileRoute on GoRouteData {
+  static ProfileRoute _fromState(GoRouterState state) => const ProfileRoute();
 
   @override
-  String get location => GoRouteData.$location('/second/details');
+  String get location => GoRouteData.$location('/profile');
 
   @override
   void go(BuildContext context) => context.go(location);

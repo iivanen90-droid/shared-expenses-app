@@ -32,18 +32,11 @@ class SplashRoute extends GoRouteData with $SplashRoute implements RouteModel {
       routes: [
         TypedGoRoute<HomeRoute>(
           path: HomeRoute.path,
-          routes: [TypedGoRoute<HomeDetailsRoute>(path: 'details')],
+          routes: [TypedGoRoute<NewTricountRoute>(path: 'new')],
         ),
       ],
     ),
-    TypedStatefulShellBranch<SecondBranch>(
-      routes: [
-        TypedGoRoute<SecondTabRoute>(
-          path: '/second',
-          routes: [TypedGoRoute<SecondDetailsRoute>(path: 'details')],
-        ),
-      ],
-    ),
+    TypedStatefulShellBranch<ProfileBranch>(routes: [TypedGoRoute<ProfileRoute>(path: ProfileRoute.path)]),
   ],
 )
 class MainShellRoute extends StatefulShellRouteData {
@@ -59,9 +52,9 @@ class HomeBranch extends StatefulShellBranchData {
   static final GlobalKey<NavigatorState> $navigatorKey = GoRouterConfig.homeNavigatorKey;
 }
 
-class SecondBranch extends StatefulShellBranchData {
-  const SecondBranch();
-  static final GlobalKey<NavigatorState> $navigatorKey = GoRouterConfig.secondNavigatorKey;
+class ProfileBranch extends StatefulShellBranchData {
+  const ProfileBranch();
+  static final GlobalKey<NavigatorState> $navigatorKey = GoRouterConfig.profileNavigatorKey;
 }
 
 @immutable
@@ -74,31 +67,18 @@ class HomeRoute extends GoRouteData with $HomeRoute implements RouteModel {
 }
 
 @immutable
-class HomeDetailsRoute extends GoRouteData with $HomeDetailsRoute implements RouteModel {
-  const HomeDetailsRoute();
-  @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => buildPlatformPage(
-    context: context,
-    state: state,
-    child: const TabDetailsPage(identifier: 'home_details'),
-  );
-}
-
-@immutable
-class SecondTabRoute extends GoRouteData with $SecondTabRoute implements RouteModel {
-  const SecondTabRoute();
+class NewTricountRoute extends GoRouteData with $NewTricountRoute implements RouteModel {
+  const NewTricountRoute();
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      buildPlatformPage(context: context, state: state, child: const SecondTabPage());
+      buildPlatformPage(context: context, state: state, child: const NewTricountPage());
 }
 
 @immutable
-class SecondDetailsRoute extends GoRouteData with $SecondDetailsRoute implements RouteModel {
-  const SecondDetailsRoute();
+class ProfileRoute extends GoRouteData with $ProfileRoute implements RouteModel {
+  const ProfileRoute();
+  static const path = '/profile';
   @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) => buildPlatformPage(
-    context: context,
-    state: state,
-    child: const TabDetailsPage(identifier: 'second_details'),
-  );
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const ProfilePage());
 }
