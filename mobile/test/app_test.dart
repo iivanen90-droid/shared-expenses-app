@@ -193,7 +193,9 @@ void main() {
   testWidgets('the form validates fields, preserves edits on save failure and confirms only a successful write', (
     tester,
   ) async {
-    final repository = _GroupsRepository()..failNextSave = true;
+    final repository = _GroupsRepository()
+      ..failNextSave = true
+      ..groups.add(const HomeGroup(id: 40, name: 'Earlier group', emoji: '⭐', currencyCode: 'EUR', participants: []));
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
@@ -253,14 +255,33 @@ void main() {
       await tester.tap(create);
       await tester.pumpAndSettle();
       expect(find.text('Tricount створено'), findsOneWidget);
-      expect(repository.groups.single.currencyCode, 'UAH');
-      expect(repository.groups.single.emoji, '🏔️');
-      expect(repository.groups.single.participants, ['Alex']);
+      expect(repository.groups.first.currencyCode, 'UAH');
+      expect(repository.groups.first.emoji, '🏔️');
+      expect(repository.groups.first.participants, ['Alex']);
+
+      final heading = find.text('Tricount створено');
+      expect(find.text('До групи'), findsOneWidget);
+      await tester.element(heading).setLocale(const Locale('en'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text("Let's go!"));
+      await tester.pumpAndSettle();
+      final groupTitle = find.descendant(of: find.byType(AppBar), matching: find.text('Mountain Trip'));
+      expect(groupTitle, findsOneWidget);
+      expect(find.bySemanticsIdentifier('group_details'), findsOneWidget);
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('Mountain Trip'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      expect(find.text('Tricount created'), findsNothing);
       expect(name, findsNothing);
+      await tester.tap(find.text('Mountain Trip'));
+      await tester.pumpAndSettle();
+      expect(groupTitle, findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Earlier group'));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Earlier group')), findsOneWidget);
     }, repository: repository);
   });
 
@@ -370,6 +391,14 @@ class _GroupsRepository implements HomeGroupsRepository {
     groups.insert(0, saved);
     _updates.add(Right(List.of(groups)));
     return Right(saved);
+  }
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> find(int id) async {
+    for (final group in groups) {
+      if (group.id == id) return Right(group);
+    }
+    return const Right(null);
   }
 
   Future<void> close() => _updates.close();

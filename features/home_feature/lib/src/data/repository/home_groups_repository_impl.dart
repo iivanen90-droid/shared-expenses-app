@@ -37,6 +37,16 @@ final class HomeGroupsRepositoryImpl implements HomeGroupsRepository {
     }
   }
 
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> find(int id) async {
+    try {
+      final record = await _source.find(id);
+      return Right(record == null ? null : _toGroup(record));
+    } on Object {
+      return const Left(GroupsStorageFailure());
+    }
+  }
+
   static HomeGroup _toGroup(HomeGroupRecord record) => HomeGroup(
     id: record.id,
     name: record.name,

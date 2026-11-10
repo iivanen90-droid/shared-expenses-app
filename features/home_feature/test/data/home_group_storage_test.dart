@@ -36,6 +36,9 @@ void main() {
         expect(group.emoji, '🏕️');
         expect(group.currencyCode, 'UAH');
         expect(group.participants, ['Alex', 'Sam']);
+        final found = (await reopened.find(group.id)).getOrElse((_) => throw StateError('Lookup failed'));
+        expect(found?.name, 'City trip');
+        expect((await reopened.find(group.id + 100)).getOrElse((_) => throw StateError('Lookup failed')), isNull);
       } finally {
         await writer.close();
         await reader.close();

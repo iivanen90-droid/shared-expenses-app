@@ -132,6 +132,8 @@ class _GroupCard extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: ExcludeSemantics(child: Text(group.emoji, style: context.texts.heading)),
       title: Text(group.name, style: context.texts.title),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.goTo(GroupDetailsRoute(groupId: group.id)),
     ),
   );
 }

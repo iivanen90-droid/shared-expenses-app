@@ -28,6 +28,9 @@ class _Groups implements HomeGroupsInteractor {
 
   @override
   Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) => throw UnimplementedError();
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> find(int id) => throw UnimplementedError();
 }
 
 class _TranslationsLoader extends AssetLoader {

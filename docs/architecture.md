@@ -218,6 +218,8 @@ so Back at a tab root does not reopen splash. No separate native splash has been
 Home at /home observes ObjectBox through its repository, interactor, and Cubit. An empty list shows
 a localized message. Start New Tricount opens the form from the modal sheet. The form saves the group
 and its participant names in one ObjectBox record, then replaces the form with a confirmation route.
+The confirmation action and the Home list open the group placeholder by its stored ID. The group
+route replaces the confirmation and retains Home beneath it for Back.
 The [currency catalog](currency-catalog.md) is bundled offline. Join Existing Tricount is a placeholder. Profile at /profile
 is a blank placeholder.
 State is not restored after process termination.
@@ -237,7 +239,7 @@ Generate after route changes from packages/router:
 fvm dart run build_runner build --force-jit
 ~~~
 
-Manual check: splash → Home → New Tricount → Start → fill the form → Create → confirmation → Back to Home.
+Manual check: splash → Home → New Tricount → Start → fill the form → Create → confirmation → open group → Back to Home.
 Back from the Home root must not reopen splash. Mobile tests also verify the two actions, dismissal,
 and both locales.
 

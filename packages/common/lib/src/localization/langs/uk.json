@@ -31,5 +31,9 @@
   "groupSaving": "Збереження…",
   "groupSaveFailed": "Не вдалося зберегти групу. Спробуйте ще раз.",
   "groupsLoadFailed": "Не вдалося завантажити групи",
-  "groupCreated": "Tricount створено"
+  "groupCreated": "Tricount створено",
+  "groupGoTo": "До групи",
+  "groupDetailsTitle": "Група",
+  "groupMissing": "Групу не знайдено",
+  "groupLoadFailed": "Не вдалося завантажити групу"
 }

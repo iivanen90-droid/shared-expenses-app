@@ -36,4 +36,8 @@ abstract class LocaleKeys {
   static const groupSaveFailed = 'groupSaveFailed';
   static const groupsLoadFailed = 'groupsLoadFailed';
   static const groupCreated = 'groupCreated';
+  static const groupGoTo = 'groupGoTo';
+  static const groupDetailsTitle = 'groupDetailsTitle';
+  static const groupMissing = 'groupMissing';
+  static const groupLoadFailed = 'groupLoadFailed';
 }

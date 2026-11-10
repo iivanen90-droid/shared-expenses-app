@@ -31,5 +31,9 @@
   "groupSaving": "Saving…",
   "groupSaveFailed": "Unable to save the group. Try again.",
   "groupsLoadFailed": "Unable to load groups",
-  "groupCreated": "Tricount created"
+  "groupCreated": "Tricount created",
+  "groupGoTo": "Let's go!",
+  "groupDetailsTitle": "Group",
+  "groupMissing": "Group not found",
+  "groupLoadFailed": "Unable to load the group"
 }
