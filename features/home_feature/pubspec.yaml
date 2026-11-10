@@ -10,7 +10,6 @@ dependencies:
   core:
   ui_kit:
   common:
-  router:
   flutter_bloc:
   freezed_annotation:
   easy_localization:

@@ -5,5 +5,10 @@
   "homeTab": "Головна",
   "profileTab": "Профіль",
   "newTricount": "Новий Tricount",
+  "addTricount": "Додати",
+  "startNewTricount": "Створити новий Tricount",
+  "startNewTricountDescription": "Створіть Tricount з нуля.",
+  "joinExistingTricount": "Приєднатися до наявного Tricount",
+  "joinExistingTricountDescription": "Скористайтеся посиланням-запрошенням.",
   "noGroups": "У вас ще немає груп"
 }

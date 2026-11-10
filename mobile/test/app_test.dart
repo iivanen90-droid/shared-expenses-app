@@ -108,57 +108,88 @@ void main() {
     }
   });
 
-  testWidgets('Home keeps the New Tricount page open after switching tabs and reselecting Home', (tester) async {
+  testWidgets('New Tricount opens a modal with two placeholder actions above Home', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
+      final home = find.bySemanticsIdentifier('home_title');
+      final homeElement = tester.element(home);
       final navigation = find.byType(NavigationBar);
       expect(tester.widget<NavigationBar>(navigation).destinations, hasLength(2));
       await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
       await tester.pumpAndSettle();
-      final placeholder = find.bySemanticsIdentifier('new_tricount_title');
-      expect(placeholder, findsOneWidget);
+
+      final sheet = find.byType(BottomSheet);
+      final start = find.bySemanticsIdentifier('add_tricount_start');
+      final join = find.bySemanticsIdentifier('add_tricount_join');
+      expect(sheet, findsOneWidget);
+      expect(find.descendant(of: sheet, matching: find.byType(ListTile)), findsNWidgets(2));
+      expect(start, findsOneWidget);
+      expect(join, findsOneWidget);
+      expect(GoRouterConfig.rootNavigatorKey.currentState?.canPop(), isTrue);
+      expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isFalse);
+      expect(find.bySemanticsIdentifier('tab_profile').hitTestable(), findsNothing);
+
+      await tester.tap(start);
+      await tester.pumpAndSettle();
+      expect(sheet, findsOneWidget);
+      await tester.tap(join);
+      await tester.pumpAndSettle();
+      expect(sheet, findsOneWidget);
       expect(find.byType(TextField), findsNothing);
-      expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isTrue);
+
+      await tester.tap(find.bySemanticsIdentifier('add_tricount_close'));
+      await tester.pumpAndSettle();
+      expect(sheet, findsNothing);
+      expect(tester.element(home), same(homeElement));
       await tester.tap(find.bySemanticsIdentifier('tab_profile'));
       await tester.pumpAndSettle();
-      final profile = find.bySemanticsIdentifier('profile_page');
-      final profileElement = tester.element(profile);
-      expect(placeholder, findsNothing);
-      expect(GoRouterConfig.profileNavigatorKey.currentState?.canPop(), isFalse);
+      expect(find.bySemanticsIdentifier('profile_page'), findsOneWidget);
       await tester.tap(find.bySemanticsIdentifier('tab_home'));
       await tester.pumpAndSettle();
-      expect(placeholder, findsOneWidget);
-      await tester.tap(find.bySemanticsIdentifier('tab_home'));
-      await tester.pumpAndSettle();
-      expect(placeholder, findsOneWidget);
-      await tester.binding.handlePopRoute();
-      await tester.pumpAndSettle();
-      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      expect(tester.element(home), same(homeElement));
       expect(find.text('Barcelona'), findsOneWidget);
-      await tester.tap(find.bySemanticsIdentifier('tab_profile'));
-      await tester.pumpAndSettle();
-      expect(tester.element(profile), same(profileElement));
-      expect(tester.takeException(), isNull);
     });
   });
 
-  testWidgets('language changes update both tab labels and the open New Tricount page', (tester) async {
+  testWidgets('the modal dismisses by Back, tapping outside, or dragging down', (tester) async {
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      final action = find.bySemanticsIdentifier('home_new_tricount');
+      final sheet = find.byType(BottomSheet);
+
+      for (final dismiss in <Future<void> Function()>[
+        () async {
+          await tester.binding.handlePopRoute();
+        },
+        () => tester.tapAt(const Offset(8, 8)),
+        () => tester.dragFrom(tester.getRect(sheet).topCenter + const Offset(0, 18), const Offset(0, 350)),
+      ]) {
+        await tester.tap(action);
+        await tester.pumpAndSettle();
+        expect(sheet, findsOneWidget);
+        await dismiss();
+        await tester.pumpAndSettle();
+        expect(sheet, findsNothing);
+        expect(action.hitTestable(), findsOneWidget);
+      }
+    });
+  });
+
+  testWidgets('the open modal translates both options when the locale changes', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
       await tester.pumpAndSettle();
-      final placeholder = find.bySemanticsIdentifier('new_tricount_title');
-      final context = tester.element(placeholder);
-      expect(find.text('Новий Tricount'), findsOneWidget);
-      expect(find.text('Головна'), findsOneWidget);
-      expect(find.text('Профіль'), findsOneWidget);
-      await context.setLocale(const Locale('en'));
+
+      final heading = find.bySemanticsIdentifier('add_tricount_title');
+      expect(find.text('Додати'), findsOneWidget);
+      expect(find.text('Створити новий Tricount'), findsOneWidget);
+      expect(find.text('Приєднатися до наявного Tricount'), findsOneWidget);
+      await tester.element(heading).setLocale(const Locale('en'));
       await tester.pumpAndSettle();
-      expect(find.text('Home'), findsOneWidget);
-      expect(find.text('Profile'), findsOneWidget);
-      expect(find.text('New Tricount'), findsOneWidget);
-      expect(tester.element(placeholder), same(context));
-      expect(tester.takeException(), isNull);
+      expect(find.text('Add'), findsOneWidget);
+      expect(find.text('Start New Tricount'), findsOneWidget);
+      expect(find.text('Join Existing Tricount'), findsOneWidget);
     });
   });
 

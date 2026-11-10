@@ -198,17 +198,18 @@ The page calls goBranch directly from NavigationBar without resetting initialLoc
 After successful initialization, splash calls context.goTo(const HomeRoute()). go replaces the route,
 so Back at a tab root does not reopen splash. No separate native splash has been added.
 Home at /home reads demo groups from the local source through its repository, interactor, and Cubit.
-An empty list shows a localized message. New Tricount opens /home/new through context.pushTo within
-Home's stack. It has no form or persistence. Profile at /profile is a blank placeholder.
+An empty list shows a localized message. New Tricount opens a modal bottom sheet above the tab shell.
+Start New Tricount and Join Existing Tricount have separate placeholder callbacks. Profile at /profile
+is a blank placeholder.
 State is not restored after process termination.
 
 buildPlatformPage returns Flutter SDK MaterialPage on Android and CupertinoPage on iOS as in the guide.
 Only transitions differ; widgets, AppTheme.main(), colors, and text remain standard Flutter Material.
 External material_ui/cupertino_ui packages are not reintroduced.
 Thin context.pushTo/goTo wrappers delegate to generated push/go without route type checks.
-main_shell_feature does not import other features. HomePage uses the public router barrel in its button
-handler. Route builders construct pages without navigation callbacks. main_shell_feature declares
-go_router for StatefulNavigationShell; home_feature declares router.
+main_shell_feature does not import other features. Route builders construct pages without navigation
+callbacks. main_shell_feature declares go_router for StatefulNavigationShell. Home presents the modal
+locally using Flutter Material.
 Other feature DI remains registered in common in data → domain → ui order.
 
 Generate after route changes from packages/router:
@@ -217,9 +218,9 @@ Generate after route changes from packages/router:
 fvm dart run build_runner build --force-jit
 ~~~
 
-Manual check: splash → Home → New Tricount → Profile → Home (the placeholder remains open) → Back.
-Back from the Home root must not reopen splash. Mobile tests also verify that a language change
-updates the tab labels and open placeholder without losing the Home stack.
+Manual check: splash → Home → New Tricount → dismiss the sheet → Profile → Home.
+Back from the Home root must not reopen splash. Mobile tests also verify the two actions, dismissal,
+and both locales.
 
 Theme, localization, and initialization from PR #14–16 are already merged into develop.
 Navigation changes must be integrated after prerequisite PRs and another check against the current develop.

@@ -35,14 +35,7 @@ RouteBase get $mainShellRoute => StatefulShellRouteData.$route(
   branches: [
     StatefulShellBranchData.$branch(
       navigatorKey: HomeBranch.$navigatorKey,
-      routes: [
-        GoRouteData.$route(
-          path: '/home',
-          hasOverriddenOnExit: false,
-          factory: $HomeRoute._fromState,
-          routes: [GoRouteData.$route(path: 'new', hasOverriddenOnExit: false, factory: $NewTricountRoute._fromState)],
-        ),
-      ],
+      routes: [GoRouteData.$route(path: '/home', hasOverriddenOnExit: false, factory: $HomeRoute._fromState)],
     ),
     StatefulShellBranchData.$branch(
       navigatorKey: ProfileBranch.$navigatorKey,
@@ -60,25 +53,6 @@ mixin $HomeRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/home');
-
-  @override
-  void go(BuildContext context) => context.go(location);
-
-  @override
-  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
-
-  @override
-  void pushReplacement(BuildContext context) => context.pushReplacement(location);
-
-  @override
-  void replace(BuildContext context) => context.replace(location);
-}
-
-mixin $NewTricountRoute on GoRouteData {
-  static NewTricountRoute _fromState(GoRouterState state) => const NewTricountRoute();
-
-  @override
-  String get location => GoRouteData.$location('/home/new');
 
   @override
   void go(BuildContext context) => context.go(location);

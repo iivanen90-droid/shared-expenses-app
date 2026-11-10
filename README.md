@@ -265,8 +265,8 @@ in the [architecture](docs/architecture.md).
 
 After initialization, /splash is replaced by /home. The Home and Profile tabs retain their state
 through the typed StatefulShellRoute. Home displays a local demo group list and handles an empty list.
-New Tricount opens a placeholder within the Home stack. Profile is blank. Both tabs use the app theme
-and en/uk localization.
+New Tricount opens a modal sheet with Start New Tricount and Join Existing Tricount. Both actions
+are placeholders for future flows. Profile is blank. The UI uses the app theme and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:

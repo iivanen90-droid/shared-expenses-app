@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/ui/home/state/home_cubit.dart';
-import 'package:router/router.dart';
+import 'package:home_feature/src/ui/home/add_tricount_sheet.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 class HomePage extends StatelessWidget {
@@ -18,6 +18,14 @@ class HomePage extends StatelessWidget {
 
 class _HomeView extends StatelessWidget {
   const _HomeView();
+
+  void _startNewTricount() {
+    // The creation flow will be connected here when it exists.
+  }
+
+  void _joinExistingTricount() {
+    // The invitation flow will be connected here when it exists.
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -76,7 +84,14 @@ class _HomeView extends StatelessWidget {
               child: Semantics(
                 identifier: 'home_new_tricount',
                 child: FilledButton.tonalIcon(
-                  onPressed: () => context.pushTo<void>(const NewTricountRoute()),
+                  onPressed: () => showModalBottomSheet<void>(
+                    context: context,
+                    useRootNavigator: true,
+                    useSafeArea: true,
+                    isScrollControlled: true,
+                    showDragHandle: true,
+                    builder: (_) => AddTricountSheet(onStart: _startNewTricount, onJoin: _joinExistingTricount),
+                  ),
                   icon: const Icon(Icons.add),
                   label: Text(LocaleKeys.newTricount.tr(context: context), textAlign: TextAlign.center),
                 ),

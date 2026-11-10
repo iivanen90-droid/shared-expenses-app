@@ -9,5 +9,10 @@ abstract class LocaleKeys {
   static const homeTab = 'homeTab';
   static const profileTab = 'profileTab';
   static const newTricount = 'newTricount';
+  static const addTricount = 'addTricount';
+  static const startNewTricount = 'startNewTricount';
+  static const startNewTricountDescription = 'startNewTricountDescription';
+  static const joinExistingTricount = 'joinExistingTricount';
+  static const joinExistingTricountDescription = 'joinExistingTricountDescription';
   static const noGroups = 'noGroups';
 }
