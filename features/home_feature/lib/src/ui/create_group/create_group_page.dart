@@ -46,8 +46,18 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
       (value ?? '').trim().isEmpty ? errorKey.tr(context: context) : null;
 
   void _submit() {
+    final form = _form.currentState;
+    if (form == null) return;
+    final invalid = form.validateGranularly();
+    if (invalid.isNotEmpty) {
+      final first = invalid.first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (first.mounted) Scrollable.ensureVisible(first.context);
+      });
+      return;
+    }
     final currency = _currency;
-    if (_form.currentState?.validate() != true || currency == null) return;
+    if (currency == null) return;
     context.read<CreateGroupCubit>().create((
       name: _name.text.trim(),
       emoji: _emoji,
@@ -99,103 +109,107 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
           body: SafeArea(
             child: Form(
               key: _form,
-              child: ListView(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(16),
-                children: [
-                  Text(LocaleKeys.groupName.tr(context: context), style: context.texts.title),
-                  const SizedBox(height: 8),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      IconButton.filledTonal(
-                        tooltip: LocaleKeys.groupEmoji.tr(context: context),
-                        onPressed: saving ? null : _selectEmoji,
-                        icon: Text(_emoji, style: const TextStyle(fontSize: 24)),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(LocaleKeys.groupName.tr(context: context), style: context.texts.title),
+                    const SizedBox(height: 8),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        IconButton.filledTonal(
+                          tooltip: LocaleKeys.groupEmoji.tr(context: context),
+                          onPressed: saving ? null : _selectEmoji,
+                          icon: Text(_emoji, style: const TextStyle(fontSize: 24)),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            key: const ValueKey('group_name'),
+                            controller: _name,
+                            enabled: !saving,
+                            textCapitalization: TextCapitalization.sentences,
+                            decoration: InputDecoration(
+                              hintText: LocaleKeys.groupNameHint.tr(context: context),
+                              border: const OutlineInputBorder(),
+                            ),
+                            validator: (value) => _requiredText(value, LocaleKeys.groupNameRequired),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    FormField<GroupCurrency>(
+                      initialValue: _currency,
+                      validator: (value) =>
+                          value == null ? LocaleKeys.groupCurrencyRequired.tr(context: context) : null,
+                      builder: (field) {
+                        final currency = field.value;
+                        return OutlinedButton(
+                          key: const ValueKey('group_currency'),
+                          onPressed: saving ? null : () => _selectCurrency(field),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              border: InputBorder.none,
+                              labelText: LocaleKeys.groupCurrency.tr(context: context),
+                              errorText: field.errorText,
+                            ),
+                            child: Text(
+                              currency == null
+                                  ? LocaleKeys.groupCurrencySelect.tr(context: context)
+                                  : '${currency.name(context.locale)} (${currency.code})',
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Text(LocaleKeys.groupParticipants.tr(context: context), style: context.texts.title),
+                    for (final participant in _participants)
+                      Padding(
+                        key: ObjectKey(participant),
+                        padding: const EdgeInsets.only(top: 8),
                         child: TextFormField(
-                          key: const ValueKey('group_name'),
-                          controller: _name,
+                          controller: participant,
                           enabled: !saving,
-                          textCapitalization: TextCapitalization.sentences,
+                          textCapitalization: TextCapitalization.words,
                           decoration: InputDecoration(
-                            hintText: LocaleKeys.groupNameHint.tr(context: context),
+                            labelText: LocaleKeys.groupParticipantName.tr(context: context),
                             border: const OutlineInputBorder(),
+                            suffixIcon: IconButton(
+                              tooltip: LocaleKeys.groupRemoveParticipant.tr(context: context),
+                              onPressed: saving ? null : () => _removeParticipant(participant),
+                              icon: const Icon(Icons.remove_circle_outline),
+                            ),
                           ),
-                          validator: (value) => _requiredText(value, LocaleKeys.groupNameRequired),
+                          validator: (value) => _requiredText(value, LocaleKeys.groupParticipantRequired),
                         ),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  FormField<GroupCurrency>(
-                    initialValue: _currency,
-                    validator: (value) => value == null ? LocaleKeys.groupCurrencyRequired.tr(context: context) : null,
-                    builder: (field) {
-                      final currency = field.value;
-                      return OutlinedButton(
-                        key: const ValueKey('group_currency'),
-                        onPressed: saving ? null : () => _selectCurrency(field),
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            labelText: LocaleKeys.groupCurrency.tr(context: context),
-                            errorText: field.errorText,
-                          ),
-                          child: Text(
-                            currency == null
-                                ? LocaleKeys.groupCurrencySelect.tr(context: context)
-                                : '${currency.name(context.locale)} (${currency.code})',
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 20),
-                  Text(LocaleKeys.groupParticipants.tr(context: context), style: context.texts.title),
-                  for (final participant in _participants)
-                    Padding(
-                      key: ObjectKey(participant),
-                      padding: const EdgeInsets.only(top: 8),
-                      child: TextFormField(
-                        controller: participant,
-                        enabled: !saving,
-                        textCapitalization: TextCapitalization.words,
-                        decoration: InputDecoration(
-                          labelText: LocaleKeys.groupParticipantName.tr(context: context),
-                          border: const OutlineInputBorder(),
-                          suffixIcon: IconButton(
-                            tooltip: LocaleKeys.groupRemoveParticipant.tr(context: context),
-                            onPressed: saving ? null : () => _removeParticipant(participant),
-                            icon: const Icon(Icons.remove_circle_outline),
-                          ),
-                        ),
-                        validator: (value) => _requiredText(value, LocaleKeys.groupParticipantRequired),
+                    Align(
+                      alignment: AlignmentDirectional.centerStart,
+                      child: TextButton.icon(
+                        onPressed: saving ? null : () => setState(() => _participants.add(TextEditingController())),
+                        icon: const Icon(Icons.person_add_outlined),
+                        label: Text(LocaleKeys.groupAddParticipant.tr(context: context)),
                       ),
                     ),
-                  Align(
-                    alignment: AlignmentDirectional.centerStart,
-                    child: TextButton.icon(
-                      onPressed: saving ? null : () => setState(() => _participants.add(TextEditingController())),
-                      icon: const Icon(Icons.person_add_outlined),
-                      label: Text(LocaleKeys.groupAddParticipant.tr(context: context)),
-                    ),
-                  ),
-                  if (state.status == CreateGroupStatus.failed)
-                    Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        LocaleKeys.groupSaveFailed.tr(context: context),
-                        style: context.texts.body.copyWith(color: context.colors.error),
+                    if (state.status == CreateGroupStatus.failed)
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(
+                          LocaleKeys.groupSaveFailed.tr(context: context),
+                          style: context.texts.body.copyWith(color: context.colors.error),
+                        ),
                       ),
+                    const SizedBox(height: 16),
+                    FilledButton(
+                      onPressed: saving ? null : _submit,
+                      child: Text((saving ? LocaleKeys.groupSaving : LocaleKeys.groupCreate).tr(context: context)),
                     ),
-                  const SizedBox(height: 16),
-                  FilledButton(
-                    onPressed: saving ? null : _submit,
-                    child: Text((saving ? LocaleKeys.groupSaving : LocaleKeys.groupCreate).tr(context: context)),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
