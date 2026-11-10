@@ -3,8 +3,9 @@ import 'package:router/router.dart';
 
 import 'dart:convert';
 import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show rootBundle, SystemChannels, MethodCall;
+import 'package:flutter/services.dart' show CachingAssetBundle, rootBundle, SystemChannels, MethodCall;
 import 'package:flutter/foundation.dart' show debugDefaultTargetPlatformOverride;
 import 'package:common/common.dart';
 import 'package:core/core.dart';
@@ -20,11 +21,14 @@ import 'package:shared_preferences_platform_interface/shared_preferences_async_p
 import 'package:ui_kit/ui_kit.dart';
 import 'package:get_it/get_it.dart';
 
+late String _currencyCatalog;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late _TranslationsLoader translations;
   SharedPreferencesAsyncPlatform? previousPlatform;
   setUpAll(() async {
+    _currencyCatalog = await rootBundle.loadString('packages/home_feature/assets/currencies.json');
     final data = <String, Map<String, dynamic>>{};
     for (final language in ['uk', 'en']) {
       final json = await rootBundle.loadString('packages/common/lib/src/localization/langs/$language.json');
@@ -285,6 +289,44 @@ void main() {
     }, repository: repository);
   });
 
+  testWidgets('a blank participant above the viewport prevents saving a long form', (tester) async {
+    final repository = _GroupsRepository();
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('add_tricount_start'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('group_name')), 'Long trip');
+      await tester.tap(find.byKey(const ValueKey('group_currency')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('currency_search')), 'USD');
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text('USD')));
+      await tester.pumpAndSettle();
+
+      final scrollable = find.descendant(of: find.byType(Form), matching: find.byType(Scrollable)).first;
+      final add = find.text('Додати учасника');
+      for (var i = 0; i < 18; i++) {
+        await tester.scrollUntilVisible(add, 100, scrollable: scrollable);
+        await tester.tap(add);
+        await tester.pumpAndSettle();
+        if (i > 0) {
+          await tester.scrollUntilVisible(add, 100, scrollable: scrollable);
+          await tester.enterText(find.byType(TextFormField).last, 'Person $i');
+          await tester.pumpAndSettle();
+        }
+      }
+
+      final create = find.text('Створити групу');
+      await tester.scrollUntilVisible(create, 100, scrollable: scrollable);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      expect(repository.attempts, 0);
+      expect(find.text('Введіть ім’я учасника').hitTestable(), findsOneWidget);
+    }, repository: repository);
+  });
+
   testWidgets('splash opens themed Home with an empty repository through the real DI and router', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
@@ -347,7 +389,12 @@ Future<void> _withApp(
       await GetIt.instance.unregister<ApplicationInitializer>();
       DependencyProvider.registerLazySingleton<ApplicationInitializer>(() => initializer);
     }
-    await tester.pumpWidget(LocalizationsWrapper(assetLoader: translations, child: const App()));
+    await tester.pumpWidget(
+      DefaultAssetBundle(
+        bundle: _TestAssetBundle(),
+        child: LocalizationsWrapper(assetLoader: translations, child: const App()),
+      ),
+    );
     await testBody();
   } finally {
     await _disposeApp(tester);
@@ -402,6 +449,16 @@ class _GroupsRepository implements HomeGroupsRepository {
   }
 
   Future<void> close() => _updates.close();
+}
+
+class _TestAssetBundle extends CachingAssetBundle {
+  @override
+  Future<ByteData> load(String key) => rootBundle.load(key);
+
+  @override
+  Future<String> loadString(String key, {bool cache = true}) => key == 'packages/home_feature/assets/currencies.json'
+      ? Future.value(_currencyCatalog)
+      : rootBundle.loadString(key, cache: cache);
 }
 
 class _TranslationsLoader extends AssetLoader {

@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'package:common/common.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 final class GroupCurrency {
@@ -26,11 +25,17 @@ class CurrencyPicker extends StatefulWidget {
 }
 
 class _CurrencyPickerState extends State<CurrencyPicker> {
-  late final Future<List<GroupCurrency>> _catalog = _loadCatalog();
+  Future<List<GroupCurrency>>? _catalog;
   String _search = '';
 
-  static Future<List<GroupCurrency>> _loadCatalog() async {
-    final json = await rootBundle.loadString('packages/home_feature/assets/currencies.json');
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _catalog ??= _loadCatalog(DefaultAssetBundle.of(context));
+  }
+
+  static Future<List<GroupCurrency>> _loadCatalog(AssetBundle bundle) async {
+    final json = await bundle.loadString('packages/home_feature/assets/currencies.json');
     final entries = jsonDecode(json) as Map<String, dynamic>;
     return [
       for (final MapEntry(key: code, value: names as List<dynamic>) in entries.entries)
