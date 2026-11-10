@@ -3,8 +3,8 @@
 Design decisions originate in the [Inspiro guide](inspiro-architecture-guide.md).
 Implemented packages, layers, initialization, navigation, and generation are described in the
 [current architecture](architecture.md). The workspace and initial shell already exist.
-The working name is Tricount; the home screen retains the localized Shared expenses title.
-Expense business logic, groups, expense persistence, and a backend are not implemented yet.
+Home lists locally stored Tricount groups. The creation flow stores each group's title, emoji,
+currency, and participant names. Expense logic and a backend remain planned.
 
 ## Preliminary module map
 
@@ -24,10 +24,9 @@ Add each package when its corresponding scenario is agreed upon.
 Define authentication, backend, synchronization, notifications, and external integrations separately
 if they become requirements. The guide is not Tricount's product specification.
 
-Splash and home are implemented as the initial shell. Other modules in the table remain planned
-and will be created from agreed screenshots. The ObjectBox wrapper is available in core. Add
-database entities and DTO/json_serializable with the relevant scenario. StatefulShellRoute already
-provides a two-tab shell without financial logic.
+The Home feature owns the current local group flow. The module table describes future boundaries.
+ObjectBox entities are owned by the feature that uses them. Add API DTOs with an agreed API scenario.
+StatefulShellRoute provides the two-tab shell.
 
 ## Financial data rules
 

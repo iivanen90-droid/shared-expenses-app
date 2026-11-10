@@ -2,7 +2,7 @@
 
 Flutter application for Android/iOS. The implemented shell includes splash with readiness checks
 and retry after failure, a home screen, two tabs with independent stacks, and Ukrainian/English localization.
-Expense tracking, groups, balances, and synchronization are not implemented yet.
+Groups can be created and listed locally. Expense tracking, balances, and synchronization are planned.
 
 ## Structure
 
