@@ -13,10 +13,18 @@ dependencies:
   flutter_bloc:
   freezed_annotation:
   easy_localization:
+  router:
+  objectbox:
+  objectbox_flutter_libs:
 dev_dependencies:
   flutter_test:
     sdk: flutter
   build_runner:
+  objectbox_generator:
   freezed:
   mocktail:
   shared_preferences:
+flutter:
+  assets:
+    - assets/currencies.json
+    - assets/UNICODE-LICENSE.txt

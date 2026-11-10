@@ -139,7 +139,10 @@ For a schema outside mobile, declare objectbox_flutter_libs in the schema packag
 generated Flutter opener. Pass an explicit app-private directory when using a plain Dart opener.
 Generate from that package with `fvm dart run build_runner build --force-jit` and commit
 both `objectbox-model.json` and `objectbox.g.dart`. Keep the model IDs stable across migrations.
-See the [ObjectBox Flutter setup guide](https://docs.objectbox.io/getting-started).
+See the [ObjectBox Flutter setup guide](https://docs.objectbox.io/getting-started). The home_feature
+persistence test is opt-in on desktop. Put the matching native library on the loader path, set
+`TRICOUNT_TEST_OBJECTBOX=1`, then run `fvm flutter test test/data/home_group_storage_test.dart`
+from features/home_feature.
 
 ## Base theme: ui_kit
 
@@ -212,9 +215,10 @@ The page calls goBranch directly from NavigationBar without resetting initialLoc
 
 After successful initialization, splash calls context.goTo(const HomeRoute()). go replaces the route,
 so Back at a tab root does not reopen splash. No separate native splash has been added.
-Home at /home reads demo groups from the local source through its repository, interactor, and Cubit.
-An empty list shows a localized message. New Tricount opens a modal bottom sheet above the tab shell.
-Start New Tricount and Join Existing Tricount have separate placeholder callbacks. Profile at /profile
+Home at /home observes ObjectBox through its repository, interactor, and Cubit. An empty list shows
+a localized message. Start New Tricount opens the form from the modal sheet. The form saves the group
+and its participant names in one ObjectBox record, then replaces the form with a confirmation route.
+The [currency catalog](currency-catalog.md) is bundled offline. Join Existing Tricount is a placeholder. Profile at /profile
 is a blank placeholder.
 State is not restored after process termination.
 
@@ -233,7 +237,7 @@ Generate after route changes from packages/router:
 fvm dart run build_runner build --force-jit
 ~~~
 
-Manual check: splash → Home → New Tricount → dismiss the sheet → Profile → Home.
+Manual check: splash → Home → New Tricount → Start → fill the form → Create → confirmation → Back to Home.
 Back from the Home root must not reopen splash. Mobile tests also verify the two actions, dismissal,
 and both locales.
 

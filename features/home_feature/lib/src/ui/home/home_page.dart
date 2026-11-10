@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/ui/home/state/home_cubit.dart';
 import 'package:home_feature/src/ui/home/add_tricount_sheet.dart';
+import 'package:router/router.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 class HomePage extends StatelessWidget {
@@ -19,8 +20,17 @@ class HomePage extends StatelessWidget {
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
-  void _startNewTricount() {
-    // The creation flow will be connected here when it exists.
+  Future<void> _openSheet(BuildContext context) async {
+    final start = await showModalBottomSheet<bool>(
+      context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) =>
+          AddTricountSheet(onStart: () => Navigator.of(sheetContext).pop(true), onJoin: _joinExistingTricount),
+    );
+    if (context.mounted && start == true) context.goTo(const CreateGroupRoute());
   }
 
   void _joinExistingTricount() {
@@ -59,6 +69,18 @@ class _HomeView extends StatelessWidget {
             child: BlocBuilder<HomeCubit, HomeState>(
               builder: (context, state) => switch (state.status) {
                 HomeStatus.loading => const Center(child: CircularProgressIndicator()),
+                HomeStatus.failed => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(LocaleKeys.groupsLoadFailed.tr(context: context)),
+                      TextButton(
+                        onPressed: context.read<HomeCubit>().retry,
+                        child: Text(LocaleKeys.retry.tr(context: context)),
+                      ),
+                    ],
+                  ),
+                ),
                 HomeStatus.loaded when state.groups.isEmpty => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -84,14 +106,7 @@ class _HomeView extends StatelessWidget {
               child: Semantics(
                 identifier: 'home_new_tricount',
                 child: FilledButton.tonalIcon(
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    useRootNavigator: true,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    showDragHandle: true,
-                    builder: (_) => AddTricountSheet(onStart: _startNewTricount, onJoin: _joinExistingTricount),
-                  ),
+                  onPressed: () => _openSheet(context),
                   icon: const Icon(Icons.add),
                   label: Text(LocaleKeys.newTricount.tr(context: context), textAlign: TextAlign.center),
                 ),

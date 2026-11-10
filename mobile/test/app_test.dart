@@ -12,6 +12,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:home_feature/home_feature.dart';
 import 'package:mobile/app.dart';
 import 'package:mobile/main_common.dart' as bootstrap;
 import 'package:shared_preferences_platform_interface/in_memory_shared_preferences_async.dart';
@@ -108,7 +109,7 @@ void main() {
     }
   });
 
-  testWidgets('New Tricount opens a modal with two placeholder actions above Home', (tester) async {
+  testWidgets('New Tricount opens a modal above Home and Join remains a placeholder', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       final home = find.bySemanticsIdentifier('home_title');
@@ -129,9 +130,6 @@ void main() {
       expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isFalse);
       expect(find.bySemanticsIdentifier('tab_profile').hitTestable(), findsNothing);
 
-      await tester.tap(start);
-      await tester.pumpAndSettle();
-      expect(sheet, findsOneWidget);
       await tester.tap(join);
       await tester.pumpAndSettle();
       expect(sheet, findsOneWidget);
@@ -147,7 +145,6 @@ void main() {
       await tester.tap(find.bySemanticsIdentifier('tab_home'));
       await tester.pumpAndSettle();
       expect(tester.element(home), same(homeElement));
-      expect(find.text('Barcelona'), findsOneWidget);
     });
   });
 
@@ -193,15 +190,86 @@ void main() {
     });
   });
 
-  testWidgets('splash opens themed Home with demo groups through the real DI and router', (tester) async {
+  testWidgets('the form validates fields, preserves edits on save failure and confirms only a successful write', (
+    tester,
+  ) async {
+    final repository = _GroupsRepository()..failNextSave = true;
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('add_tricount_start'));
+      await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsNothing);
+
+      final name = find.byKey(const ValueKey('group_name'));
+      final create = find.text('Створити групу');
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      expect(find.text('Введіть назву групи'), findsOneWidget);
+      expect(find.text('Виберіть валюту'), findsWidgets);
+      expect(repository.attempts, 0);
+      await tester.enterText(name, '  Mountain Trip  ');
+      await tester.tap(find.byTooltip('Виберіть емоджі'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('🏔️'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('group_currency')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('currency_search')), 'гривня');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('українська гривня'));
+      await tester.pumpAndSettle();
+      expect(find.text('українська гривня (UAH)'), findsOneWidget);
+
+      final add = find.text('Додати учасника');
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(create);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      expect(find.text('Введіть ім’я учасника'), findsOneWidget);
+      expect(repository.attempts, 0);
+      final first = find.byType(TextFormField).at(1);
+      await tester.enterText(first, 'First draft');
+      await tester.enterText(first, '  Alex  ');
+      await tester.ensureVisible(add);
+      await tester.tap(add);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextFormField).at(2), 'Remove me');
+      final remove = find.byTooltip('Видалити учасника').last;
+      await tester.ensureVisible(remove);
+      await tester.tap(remove);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(create);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      expect(find.text('Не вдалося зберегти групу. Спробуйте ще раз.'), findsOneWidget);
+      expect(find.text('  Mountain Trip  '), findsOneWidget);
+      expect(find.text('  Alex  '), findsOneWidget);
+      expect(find.text('Tricount створено'), findsNothing);
+      await tester.ensureVisible(create);
+      await tester.tap(create);
+      await tester.pumpAndSettle();
+      expect(find.text('Tricount створено'), findsOneWidget);
+      expect(repository.groups.single.currencyCode, 'UAH');
+      expect(repository.groups.single.emoji, '🏔️');
+      expect(repository.groups.single.participants, ['Alex']);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Mountain Trip'), findsOneWidget);
+      expect(name, findsNothing);
+    }, repository: repository);
+  });
+
+  testWidgets('splash opens themed Home with an empty repository through the real DI and router', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
       expect(find.text('Tricount'), findsOneWidget);
-      expect(find.text('Barcelona'), findsOneWidget);
-      expect(find.text('Kyiv'), findsOneWidget);
-      expect(find.text('Carpathians'), findsOneWidget);
-      expect(find.text('У вас ще немає груп'), findsNothing);
+      expect(find.text('У вас ще немає груп'), findsOneWidget);
       expect(find.text('Новий Tricount'), findsOneWidget);
       final context = tester.element(find.bySemanticsIdentifier('home_title'));
       expect(Theme.of(context).colorScheme.primary, context.colors.primary);
@@ -247,9 +315,13 @@ Future<void> _withApp(
   AssetLoader translations,
   Future<void> Function() testBody, {
   ApplicationInitializer? initializer,
+  _GroupsRepository? repository,
 }) async {
+  final groups = repository ?? _GroupsRepository();
   try {
     MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    await GetIt.instance.unregister<HomeGroupsRepository>();
+    DependencyProvider.registerLazySingleton<HomeGroupsRepository>(() => groups, dispose: (_) => groups.close());
     if (initializer != null) {
       await GetIt.instance.unregister<ApplicationInitializer>();
       DependencyProvider.registerLazySingleton<ApplicationInitializer>(() => initializer);
@@ -267,6 +339,40 @@ Future<void> _disposeApp(WidgetTester tester) async {
   } finally {
     await DependencyProvider.reset();
   }
+}
+
+class _GroupsRepository implements HomeGroupsRepository {
+  final groups = <HomeGroup>[];
+  final _updates = StreamController<Either<GroupsStorageFailure, List<HomeGroup>>>.broadcast();
+  bool failNextSave = false;
+  int attempts = 0;
+
+  @override
+  Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups() async* {
+    yield Right(List.of(groups));
+    yield* _updates.stream;
+  }
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) async {
+    attempts++;
+    if (failNextSave) {
+      failNextSave = false;
+      return const Left(GroupsStorageFailure());
+    }
+    final saved = HomeGroup(
+      id: groups.length + 1,
+      name: group.name,
+      emoji: group.emoji,
+      currencyCode: group.currencyCode,
+      participants: group.participants,
+    );
+    groups.insert(0, saved);
+    _updates.add(Right(List.of(groups)));
+    return Right(saved);
+  }
+
+  Future<void> close() => _updates.close();
 }
 
 class _TranslationsLoader extends AssetLoader {
