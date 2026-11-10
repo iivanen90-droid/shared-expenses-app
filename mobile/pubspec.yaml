@@ -12,6 +12,7 @@ dependencies:
   common:
   router:
   easy_localization:
+  objectbox_flutter_libs:
 dev_dependencies:
   get_it:
   flutter_test:
