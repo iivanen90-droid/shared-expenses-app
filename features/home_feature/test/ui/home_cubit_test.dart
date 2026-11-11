@@ -51,7 +51,7 @@ void main() {
     final analytics = _Analytics();
     final cubit = HomeCubit(analytics: analytics, interactor: const _Groups(groups));
     addTearDown(cubit.close);
-    cubit.load();
+    cubit.initialize();
     expect(cubit.state.status, HomeStatus.loaded);
     expect(cubit.state.groups, groups);
     verify(analytics.onOpened).called(1);
