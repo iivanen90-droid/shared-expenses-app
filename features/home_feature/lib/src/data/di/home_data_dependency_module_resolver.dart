@@ -13,7 +13,7 @@ abstract interface class HomeDataDependencyModuleResolver {
       },
     );
     DependencyProvider.registerLazySingleton<HomeGroupsRepository>(
-      () => HomeGroupsRepositoryImpl(source: DependencyProvider.get()),
+      () => HomeGroupsRepositoryImpl(source: DependencyProvider.get<HomeGroupsSource>()),
     );
   }
 }
