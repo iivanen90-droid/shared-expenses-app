@@ -33,6 +33,7 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
 - Never edit generated files manually. Keep the shared `pubspec.lock` in Git.
   `.fvmrc` is local and ignored; Flutter version and post-clone setup are in README.
 - Write repository documentation and agent instructions in English; communicate with the user in Ukrainian.
+- Name classes and widgets for their role, for example `AddGroupSheet`. Keep product branding in localized UI text.
 
 ## Adding functionality
 
