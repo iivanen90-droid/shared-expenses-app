@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/ui/home/state/home_cubit.dart';
-import 'package:home_feature/src/ui/home/add_tricount_sheet.dart';
+import 'package:home_feature/src/ui/home/add_group_sheet.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 class HomePage extends StatelessWidget {
@@ -95,7 +95,7 @@ class _HomeView extends StatelessWidget {
                     useSafeArea: true,
                     isScrollControlled: true,
                     showDragHandle: true,
-                    builder: (_) => AddTricountSheet(onStart: _startNewTricount, onJoin: _joinExistingTricount),
+                    builder: (_) => AddGroupSheet(onStart: _startNewTricount, onJoin: _joinExistingTricount),
                   ),
                   icon: const Icon(Icons.add),
                   label: Text(LocaleKeys.newTricount.tr(context: context), textAlign: TextAlign.center),
