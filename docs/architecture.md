@@ -123,8 +123,23 @@ Dev analytics locally records event names and technical properties; passing user
 CrashReportingService locally records error type, stack, and fatal, not arbitrary exception messages.
 
 The network client and preferences are wrappers without active server requests or financial data.
-Add ObjectBox, DTO/json_serializable, and business modules with the first agreed scenario that needs
-those data/API/tabs; they are not implemented shell features.
+Add DTO/json_serializable and business modules with the first agreed scenario that needs them.
+
+## Local database: ObjectBox
+
+Core exports ObjectBoxDatabase. The mobile package supplies the native Flutter libraries. The
+application owns one store per database directory and opens it with the schema owner's generated
+opener. Startup does not open a database until a feature provides a schema and wires the lifecycle.
+Repositories use typed boxes and can group synchronous writes with ObjectBoxDatabase.write.
+They map storage errors to feature failures. The owner closes the store when it is disposed.
+
+Keep the database model and generated bindings together. When adding the first schema, declare
+objectbox, objectbox_generator, and build_runner in its package using the root versions.
+For a schema outside mobile, declare objectbox_flutter_libs in the schema package if it needs the
+generated Flutter opener. Pass an explicit app-private directory when using a plain Dart opener.
+Generate from that package with `fvm dart run build_runner build --force-jit` and commit
+both `objectbox-model.json` and `objectbox.g.dart`. Keep the model IDs stable across migrations.
+See the [ObjectBox Flutter setup guide](https://docs.objectbox.io/getting-started).
 
 ## Base theme: ui_kit
 

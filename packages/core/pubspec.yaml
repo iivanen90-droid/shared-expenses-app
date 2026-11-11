@@ -10,6 +10,7 @@ dependencies:
   get_it:
   fpdart:
   dio:
+  objectbox:
   shared_preferences:
 dev_dependencies:
   flutter_test:
