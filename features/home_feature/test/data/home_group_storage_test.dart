@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_feature/objectbox.g.dart';
 import 'package:home_feature/src/data/repository/home_groups_repository_impl.dart';
@@ -11,9 +10,8 @@ void main() {
     'ObjectBox persists a group and participant names across store reopen',
     () async {
       final directory = await Directory.systemTemp.createTemp('tricount-groups-test-');
-      ObjectBoxHomeGroupsSource source() => ObjectBoxHomeGroupsSource(
-        openDatabase: () => ObjectBoxDatabase.open(() => Store(getObjectBoxModel(), directory: directory.path)),
-      );
+      BoxHomeGroupsSource source() =>
+          BoxHomeGroupsSource(storeOpener: () => Store(getObjectBoxModel(), directory: directory.path));
       final writer = source();
       final reader = source();
       try {

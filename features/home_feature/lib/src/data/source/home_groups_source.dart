@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:core/core.dart';
 import 'package:home_feature/objectbox.g.dart';
 import 'package:home_feature/src/data/model/home_group_record.dart';
@@ -7,15 +9,16 @@ abstract interface class HomeGroupsSource {
   Future<HomeGroupRecord> insert(HomeGroupRecord group);
 }
 
-final class ObjectBoxHomeGroupsSource implements HomeGroupsSource {
-  ObjectBoxHomeGroupsSource({required this._openDatabase});
+final class BoxHomeGroupsSource implements HomeGroupsSource {
+  BoxHomeGroupsSource({FutureOr<Store> Function()? storeOpener})
+    : _openDatabase = (() => ObjectBoxDatabase.open(storeOpener ?? openStore));
 
   final Future<ObjectBoxDatabase> Function() _openDatabase;
   Future<ObjectBoxDatabase>? _opening;
 
   Future<ObjectBoxDatabase> _open() async {
     try {
-      return await Future<ObjectBoxDatabase>.sync(_openDatabase);
+      return await _openDatabase();
     } on Object {
       _opening = null;
       rethrow;

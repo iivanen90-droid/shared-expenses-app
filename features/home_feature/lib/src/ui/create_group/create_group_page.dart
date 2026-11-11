@@ -3,7 +3,9 @@ import 'package:core/core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:home_feature/src/domain/entity/group_currency.dart';
 import 'package:home_feature/src/ui/create_group/create_group_cubit.dart';
+import 'package:home_feature/src/ui/create_group/create_group_state.dart';
 import 'package:home_feature/src/ui/create_group/currency_picker.dart';
 import 'package:home_feature/src/ui/create_group/group_emoji_picker.dart';
 import 'package:router/router.dart';
@@ -27,189 +29,182 @@ class _CreateGroupForm extends StatefulWidget {
 }
 
 class _CreateGroupFormState extends State<_CreateGroupForm> {
-  final _form = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _participants = <TextEditingController>[];
-  GroupCurrency? _currency;
-  String _emoji = '💸';
-
-  @override
-  void dispose() {
-    _name.dispose();
-    for (final participant in _participants) {
-      participant.dispose();
-    }
-    super.dispose();
-  }
-
-  String? _requiredText(String? value, String errorKey) =>
-      (value ?? '').trim().isEmpty ? errorKey.tr(context: context) : null;
-
-  void _submit() {
-    final form = _form.currentState;
-    if (form == null) return;
-    final invalid = form.validateGranularly();
-    if (invalid.isNotEmpty) {
-      final first = invalid.first;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (first.mounted) Scrollable.ensureVisible(first.context);
-      });
-      return;
-    }
-    final currency = _currency;
-    if (currency == null) return;
-    context.read<CreateGroupCubit>().create((
-      name: _name.text.trim(),
-      emoji: _emoji,
-      currencyCode: currency.code,
-      participants: [for (final participant in _participants) participant.text.trim()],
-    ));
-  }
+  final _nameKey = GlobalKey();
+  final _currencyKey = GlobalKey();
 
   Future<void> _selectEmoji() async {
     final emoji = await showModalBottomSheet<String>(
       context: context,
       useSafeArea: true,
       showDragHandle: true,
-      builder: (_) => GroupEmojiPicker(selected: _emoji),
+      builder: (_) => const GroupEmojiPicker(),
     );
-    if (mounted && emoji != null) setState(() => _emoji = emoji);
+    if (mounted && emoji != null) context.read<CreateGroupCubit>().selectEmoji(emoji);
   }
 
-  Future<void> _selectCurrency(FormFieldState<GroupCurrency> field) async {
-    final currency = await Navigator.of(context)
-        .push<GroupCurrency>(MaterialPageRoute(builder: (_) => CurrencyPicker(selectedCode: _currency?.code)));
-    if (!mounted || !field.mounted || currency == null) return;
-    setState(() => _currency = currency);
-    field.didChange(currency);
+  Future<void> _selectCurrency(String? selectedCode) async {
+    final currency = await showModalBottomSheet<GroupCurrency>(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (_) => CurrencyPicker(selectedCode: selectedCode),
+    );
+    if (mounted && currency != null) context.read<CreateGroupCubit>().selectCurrency(currency);
   }
 
-  void _removeParticipant(TextEditingController participant) {
-    setState(() => _participants.remove(participant));
-    WidgetsBinding.instance.addPostFrameCallback((_) => participant.dispose());
+  void _scrollToFirstError(CreateGroupState state) {
+    final participant = state.firstUnnamedParticipant;
+    final key = switch (state) {
+      CreateGroupState(nameMissing: true) => _nameKey,
+      CreateGroupState(currency: null) => _currencyKey,
+      _ when participant != null => GlobalObjectKey(participant.id),
+      _ => null,
+    };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final field = key?.currentContext;
+      if (field != null && field.mounted) Scrollable.ensureVisible(field);
+    });
   }
 
   @override
   Widget build(BuildContext context) => BlocConsumer<CreateGroupCubit, CreateGroupState>(
+    listenWhen: (previous, current) =>
+        previous.validationAttempts != current.validationAttempts || previous.groupId != current.groupId,
     listener: (context, state) {
       final id = state.groupId;
-      if (state.status == CreateGroupStatus.created && id != null) {
+      if (id != null) {
         context.goTo(GroupCreatedRoute(groupId: id));
+      } else {
+        _scrollToFirstError(state);
       }
     },
     builder: (context, state) {
-      final saving = state.status == CreateGroupStatus.saving;
+      final cubit = context.read<CreateGroupCubit>();
+      final canEdit = state.canEdit;
+      final showErrors = state.validationAttempts > 0;
+      final currency = state.currency;
       return PopScope(
-        canPop: !saving,
+        canPop: canEdit,
         child: Scaffold(
           appBar: AppBar(
-            leading: BackButton(onPressed: saving ? null : () => context.goTo(const HomeRoute())),
+            leading: IconButton(
+              icon: const BackButtonIcon(),
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: canEdit ? () => context.goTo(const HomeRoute()) : null,
+            ),
             title: Text(LocaleKeys.groupCreateTitle.tr(context: context)),
           ),
           body: SafeArea(
-            child: Form(
-              key: _form,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Text(LocaleKeys.groupName.tr(context: context), style: context.texts.title),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        IconButton.filledTonal(
-                          tooltip: LocaleKeys.groupEmoji.tr(context: context),
-                          onPressed: saving ? null : _selectEmoji,
-                          icon: Text(_emoji, style: const TextStyle(fontSize: 24)),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            key: const ValueKey('group_name'),
-                            controller: _name,
-                            enabled: !saving,
-                            textCapitalization: TextCapitalization.sentences,
-                            decoration: InputDecoration(
-                              hintText: LocaleKeys.groupNameHint.tr(context: context),
-                              border: const OutlineInputBorder(),
-                            ),
-                            validator: (value) => _requiredText(value, LocaleKeys.groupNameRequired),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    FormField<GroupCurrency>(
-                      initialValue: _currency,
-                      validator: (value) =>
-                          value == null ? LocaleKeys.groupCurrencyRequired.tr(context: context) : null,
-                      builder: (field) {
-                        final currency = field.value;
-                        return OutlinedButton(
-                          key: const ValueKey('group_currency'),
-                          onPressed: saving ? null : () => _selectCurrency(field),
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              border: InputBorder.none,
-                              labelText: LocaleKeys.groupCurrency.tr(context: context),
-                              errorText: field.errorText,
-                            ),
-                            child: Text(
-                              currency == null
-                                  ? LocaleKeys.groupCurrencySelect.tr(context: context)
-                                  : '${currency.name(context.locale)} (${currency.code})',
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 20),
-                    Text(LocaleKeys.groupParticipants.tr(context: context), style: context.texts.title),
-                    for (final participant in _participants)
-                      Padding(
-                        key: ObjectKey(participant),
-                        padding: const EdgeInsets.only(top: 8),
+            child: SingleChildScrollView(
+              key: const ValueKey('group_form_scroll'),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(LocaleKeys.groupName.tr(context: context), style: context.texts.title),
+                  const SizedBox(height: 8),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      IconButton.filledTonal(
+                        tooltip: LocaleKeys.groupEmoji.tr(context: context),
+                        onPressed: canEdit ? _selectEmoji : null,
+                        icon: Text(state.emoji, style: const TextStyle(fontSize: 24)),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        key: _nameKey,
                         child: TextFormField(
-                          controller: participant,
-                          enabled: !saving,
-                          textCapitalization: TextCapitalization.words,
+                          key: const ValueKey('group_name'),
+                          initialValue: state.name,
+                          onChanged: cubit.changeName,
+                          enabled: canEdit,
+                          textCapitalization: TextCapitalization.sentences,
                           decoration: InputDecoration(
-                            labelText: LocaleKeys.groupParticipantName.tr(context: context),
+                            hintText: LocaleKeys.groupNameHint.tr(context: context),
                             border: const OutlineInputBorder(),
-                            suffixIcon: IconButton(
-                              tooltip: LocaleKeys.groupRemoveParticipant.tr(context: context),
-                              onPressed: saving ? null : () => _removeParticipant(participant),
-                              icon: const Icon(Icons.remove_circle_outline),
-                            ),
+                            errorText: showErrors && state.nameMissing
+                                ? LocaleKeys.groupNameRequired.tr(context: context)
+                                : null,
                           ),
-                          validator: (value) => _requiredText(value, LocaleKeys.groupParticipantRequired),
                         ),
                       ),
-                    Align(
-                      alignment: AlignmentDirectional.centerStart,
-                      child: TextButton.icon(
-                        onPressed: saving ? null : () => setState(() => _participants.add(TextEditingController())),
-                        icon: const Icon(Icons.person_add_outlined),
-                        label: Text(LocaleKeys.groupAddParticipant.tr(context: context)),
-                      ),
-                    ),
-                    if (state.status == CreateGroupStatus.failed)
-                      Semantics(
-                        liveRegion: true,
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  KeyedSubtree(
+                    key: _currencyKey,
+                    child: OutlinedButton(
+                      key: const ValueKey('group_currency'),
+                      onPressed: canEdit ? () => _selectCurrency(currency?.code) : null,
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          border: InputBorder.none,
+                          labelText: LocaleKeys.groupCurrency.tr(context: context),
+                          errorText: showErrors && currency == null
+                              ? LocaleKeys.groupCurrencyRequired.tr(context: context)
+                              : null,
+                        ),
                         child: Text(
-                          LocaleKeys.groupSaveFailed.tr(context: context),
-                          style: context.texts.body.copyWith(color: context.colors.error),
+                          currency == null
+                              ? LocaleKeys.groupCurrencySelect.tr(context: context)
+                              : '${currency.name(context.locale.languageCode)} (${currency.code})',
                         ),
                       ),
-                    const SizedBox(height: 16),
-                    FilledButton(
-                      onPressed: saving ? null : _submit,
-                      child: Text((saving ? LocaleKeys.groupSaving : LocaleKeys.groupCreate).tr(context: context)),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(LocaleKeys.groupParticipants.tr(context: context), style: context.texts.title),
+                  for (final participant in state.participants)
+                    Padding(
+                      key: GlobalObjectKey(participant.id),
+                      padding: const EdgeInsets.only(top: 8),
+                      child: TextFormField(
+                        initialValue: participant.name,
+                        onChanged: (name) => cubit.changeParticipantName(participant.id, name),
+                        enabled: canEdit,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: InputDecoration(
+                          labelText: LocaleKeys.groupParticipantName.tr(context: context),
+                          border: const OutlineInputBorder(),
+                          errorText: showErrors && participant.name.trim().isEmpty
+                              ? LocaleKeys.groupParticipantRequired.tr(context: context)
+                              : null,
+                          suffixIcon: IconButton(
+                            tooltip: LocaleKeys.groupRemoveParticipant.tr(context: context),
+                            onPressed: canEdit ? () => cubit.removeParticipant(participant.id) : null,
+                            icon: const Icon(Icons.remove_circle_outline),
+                          ),
+                        ),
+                      ),
+                    ),
+                  Align(
+                    alignment: AlignmentDirectional.centerStart,
+                    child: TextButton.icon(
+                      onPressed: canEdit ? cubit.addParticipant : null,
+                      icon: const Icon(Icons.person_add_outlined),
+                      label: Text(LocaleKeys.groupAddParticipant.tr(context: context)),
+                    ),
+                  ),
+                  if (state.status == CreateGroupStatus.failed)
+                    Semantics(
+                      liveRegion: true,
+                      child: Text(
+                        LocaleKeys.groupSaveFailed.tr(context: context),
+                        style: context.texts.body.copyWith(color: context.colors.error),
+                      ),
+                    ),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: canEdit ? cubit.create : null,
+                    child: Text(
+                      (state.status == CreateGroupStatus.saving ? LocaleKeys.groupSaving : LocaleKeys.groupCreate).tr(
+                        context: context,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

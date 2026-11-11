@@ -216,10 +216,12 @@ void main() {
       await tester.enterText(name, '  Mountain Trip  ');
       await tester.tap(find.byTooltip('Виберіть емоджі'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('🏔️'));
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.tap(find.text('😀').hitTestable().first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('group_currency')));
       await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
       await tester.enterText(find.byKey(const ValueKey('currency_search')), 'гривня');
       await tester.pumpAndSettle();
       await tester.tap(find.text('українська гривня'));
@@ -236,12 +238,12 @@ void main() {
       expect(repository.attempts, 0);
       final first = find.byType(TextFormField).at(1);
       await tester.enterText(first, 'First draft');
-      await tester.enterText(first, '  Alex  ');
+      await tester.enterText(first, 'Remove me');
       await tester.ensureVisible(add);
       await tester.tap(add);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextFormField).at(2), 'Remove me');
-      final remove = find.byTooltip('Видалити учасника').last;
+      await tester.enterText(find.byType(TextFormField).at(2), '  Alex  ');
+      final remove = find.byTooltip('Видалити учасника').first;
       await tester.ensureVisible(remove);
       await tester.tap(remove);
       await tester.pumpAndSettle();
@@ -258,7 +260,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tricount створено'), findsOneWidget);
       expect(repository.groups.single.currencyCode, 'UAH');
-      expect(repository.groups.single.emoji, '🏔️');
+      expect(repository.groups.single.emoji, '😀');
       expect(repository.groups.single.participants, ['Alex']);
 
       await tester.binding.handlePopRoute();
@@ -284,7 +286,9 @@ void main() {
       await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text('USD')));
       await tester.pumpAndSettle();
 
-      final scrollable = find.descendant(of: find.byType(Form), matching: find.byType(Scrollable)).first;
+      final scrollable = find
+          .descendant(of: find.byKey(const ValueKey('group_form_scroll')), matching: find.byType(Scrollable))
+          .first;
       final add = find.text('Додати учасника');
       for (var i = 0; i < 18; i++) {
         await tester.scrollUntilVisible(add, 100, scrollable: scrollable);
