@@ -25,8 +25,9 @@ Define authentication, backend, synchronization, notifications, and external int
 if they become requirements. The guide is not Tricount's product specification.
 
 Splash and home are implemented as the initial shell. Other modules in the table remain planned
-and will be created from agreed screenshots. Add ObjectBox structured data and DTO/json_serializable
-only with the relevant scenario. StatefulShellRoute already provides a two-tab shell without financial logic.
+and will be created from agreed screenshots. The ObjectBox wrapper is available in core. Add
+database entities and DTO/json_serializable with the relevant scenario. StatefulShellRoute already
+provides a two-tab shell without financial logic.
 
 ## Financial data rules
 

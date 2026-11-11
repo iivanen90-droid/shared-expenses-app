@@ -122,6 +122,8 @@ For prod, use `--flavor prod --dart-define-from-file=../envs/prod.example.json`.
 Safe examples work without secrets; custom `envs/*.json` files are ignored by Git.
 ENVIRONMENT must match the native flavor. Dev uses a separate ID with the `.dev` suffix.
 Android productFlavors and iOS shared schemes are configured; iOS builds require macOS/Xcode.
+Install CocoaPods on macOS for the native ObjectBox plugin, which uses Flutter's
+[CocoaPods fallback](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-app-developers).
 Production signing, a backend, and store publishing are not configured.
 
 ## Analyzer and formatting
