@@ -4,8 +4,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
+import 'package:home_feature/src/ui/home/add_group_sheet.dart';
 import 'package:home_feature/src/ui/home/state/home_cubit.dart';
-import 'package:home_feature/src/ui/home/add_tricount_sheet.dart';
 import 'package:router/router.dart';
 import 'package:ui_kit/ui_kit.dart';
 
@@ -30,12 +30,12 @@ class _HomeView extends StatelessWidget {
       isScrollControlled: true,
       showDragHandle: true,
       builder: (sheetContext) =>
-          AddTricountSheet(onStart: () => Navigator.of(sheetContext).pop(true), onJoin: _joinExistingTricount),
+          AddGroupSheet(onStart: () => Navigator.of(sheetContext).pop(true), onJoin: _joinExistingGroup),
     );
     if (context.mounted && start == true) context.goTo(const CreateGroupRoute());
   }
 
-  void _joinExistingTricount() {
+  void _joinExistingGroup() {
     // The invitation flow will be connected here when it exists.
   }
 
