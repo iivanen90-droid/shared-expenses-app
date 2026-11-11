@@ -5,7 +5,7 @@ import 'package:router/src/routes_generator.dart';
 abstract interface class GoRouterConfig {
   static final rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
   static final homeNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'home');
-  static final secondNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'second');
+  static final profileNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'profile');
 
   /// The application owns and disposes this router; read once per App instance.
   static GoRouter get config => GoRouter(

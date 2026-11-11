@@ -1,9 +1,10 @@
 {
+  "brandName": "Tricount",
   "appTitle": "Спільні витрати",
   "startupError": "Не вдалося запустити застосунок",
   "retry": "Повторити",
   "homeTab": "Головна",
-  "secondTab": "Друга вкладка",
-  "openDetails": "Відкрити деталі",
-  "details": "Деталі"
+  "profileTab": "Профіль",
+  "newTricount": "Новий Tricount",
+  "noGroups": "У вас ще немає груп"
 }

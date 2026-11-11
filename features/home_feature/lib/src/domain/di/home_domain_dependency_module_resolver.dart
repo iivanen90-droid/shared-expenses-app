@@ -1,4 +1,11 @@
+import 'package:core/core.dart';
+import 'package:home_feature/src/domain/interactor/home_groups_interactor.dart';
+import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
+
 abstract interface class HomeDomainDependencyModuleResolver {
-  // The start screen has no domain dependencies until a product scenario is approved.
-  static void register() {}
+  static void register() {
+    DependencyProvider.registerLazySingleton<HomeGroupsInteractor>(
+      () => HomeGroupsInteractorImpl(repository: DependencyProvider.get<HomeGroupsRepository>()),
+    );
+  }
 }

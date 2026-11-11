@@ -1,9 +1,10 @@
 {
+  "brandName": "Tricount",
   "appTitle": "Shared expenses",
   "startupError": "Unable to start the app",
   "retry": "Retry",
   "homeTab": "Home",
-  "secondTab": "Second tab",
-  "openDetails": "Open details",
-  "details": "Details"
+  "profileTab": "Profile",
+  "newTricount": "New Tricount",
+  "noGroups": "You don’t have any groups yet"
 }

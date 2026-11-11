@@ -265,10 +265,10 @@ in the [architecture](docs/architecture.md).
 
 ## Tab navigation
 
-After initialization, /splash is replaced by /home. A typed StatefulShellRoute preserves independent
-stacks for two tabs; the second tab is a placeholder shell.
-Each tab's Open details button opens a placeholder nested page to verify push/Back and stack preservation.
-These pages have no financial logic. The theme and en/uk localization apply to both tabs.
+After initialization, /splash is replaced by /home. The Home and Profile tabs retain their state
+through the typed StatefulShellRoute. Home displays a local demo group list and handles an empty list.
+New Tricount opens a placeholder within the Home stack. Profile is blank. Both tabs use the app theme
+and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:

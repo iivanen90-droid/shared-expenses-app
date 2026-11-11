@@ -3,11 +3,12 @@
 // ignore_for_file: constant_identifier_names
 
 abstract class LocaleKeys {
+  static const brandName = 'brandName';
   static const appTitle = 'appTitle';
   static const startupError = 'startupError';
   static const retry = 'retry';
   static const homeTab = 'homeTab';
-  static const secondTab = 'secondTab';
-  static const openDetails = 'openDetails';
-  static const details = 'details';
+  static const profileTab = 'profileTab';
+  static const newTricount = 'newTricount';
+  static const noGroups = 'noGroups';
 }

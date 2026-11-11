@@ -20,9 +20,9 @@ class MainShellPage extends StatelessWidget {
           label: LocaleKeys.homeTab.tr(context: context),
         ),
         NavigationDestination(
-          icon: Semantics(identifier: 'tab_second', child: const Icon(Icons.layers_outlined)),
-          selectedIcon: Semantics(identifier: 'tab_second', child: const Icon(Icons.layers)),
-          label: LocaleKeys.secondTab.tr(context: context),
+          icon: Semantics(identifier: 'tab_profile', child: const Icon(Icons.person_outline)),
+          selectedIcon: Semantics(identifier: 'tab_profile', child: const Icon(Icons.person)),
+          label: LocaleKeys.profileTab.tr(context: context),
         ),
       ],
     ),
