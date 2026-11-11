@@ -6,5 +6,10 @@
   "homeTab": "Home",
   "profileTab": "Profile",
   "newTricount": "New Tricount",
+  "addTricount": "Add",
+  "startNewTricount": "Start New Tricount",
+  "startNewTricountDescription": "Start a new tricount from scratch.",
+  "joinExistingTricount": "Join Existing Tricount",
+  "joinExistingTricountDescription": "Use an invite link to join an existing tricount.",
   "noGroups": "You don’t have any groups yet"
 }

@@ -6,15 +6,18 @@ appId: com.example.shared_expenses_app.dev
 - tapOn:
     id: home_new_tricount
 - assertVisible:
-    id: new_tricount_title
+    id: add_tricount_start
+- assertVisible:
+    id: add_tricount_join
+- tapOn:
+    id: add_tricount_close
+- assertNotVisible:
+    id: add_tricount_title
 - tapOn:
     id: tab_profile
 - assertVisible:
     id: profile_page
 - tapOn:
     id: tab_home
-- assertVisible:
-    id: new_tricount_title
-- back
 - assertVisible:
     id: home_title

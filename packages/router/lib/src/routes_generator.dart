@@ -28,14 +28,7 @@ class SplashRoute extends GoRouteData with $SplashRoute implements RouteModel {
 
 @TypedStatefulShellRoute<MainShellRoute>(
   branches: [
-    TypedStatefulShellBranch<HomeBranch>(
-      routes: [
-        TypedGoRoute<HomeRoute>(
-          path: HomeRoute.path,
-          routes: [TypedGoRoute<NewTricountRoute>(path: 'new')],
-        ),
-      ],
-    ),
+    TypedStatefulShellBranch<HomeBranch>(routes: [TypedGoRoute<HomeRoute>(path: HomeRoute.path)]),
     TypedStatefulShellBranch<ProfileBranch>(routes: [TypedGoRoute<ProfileRoute>(path: ProfileRoute.path)]),
   ],
 )
@@ -64,14 +57,6 @@ class HomeRoute extends GoRouteData with $HomeRoute implements RouteModel {
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
       buildPlatformPage(context: context, state: state, child: const HomePage());
-}
-
-@immutable
-class NewTricountRoute extends GoRouteData with $NewTricountRoute implements RouteModel {
-  const NewTricountRoute();
-  @override
-  Page<void> buildPage(BuildContext context, GoRouterState state) =>
-      buildPlatformPage(context: context, state: state, child: const NewTricountPage());
 }
 
 @immutable
