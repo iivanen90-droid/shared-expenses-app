@@ -18,7 +18,7 @@ class HomeCubit extends SafeCubitWrapper<HomeState> {
   final HomeGroupsInteractor _interactor;
   StreamSubscription<Either<GroupsStorageFailure, List<HomeGroup>>>? _subscription;
 
-  void load() {
+  void initialize() {
     _analytics.onOpened();
     retry();
   }

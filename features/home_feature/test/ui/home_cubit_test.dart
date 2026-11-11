@@ -59,7 +59,7 @@ void main() {
     final cubit = HomeCubit(analytics: analytics, interactor: const _Groups(groups));
     addTearDown(cubit.close);
     final loaded = cubit.stream.firstWhere((state) => state.status == HomeStatus.loaded);
-    cubit.load();
+    cubit.initialize();
     await loaded;
     expect(cubit.state.status, HomeStatus.loaded);
     expect(cubit.state.groups, groups);

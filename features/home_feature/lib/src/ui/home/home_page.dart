@@ -13,8 +13,10 @@ class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
-  Widget build(BuildContext context) =>
-      BlocProvider<HomeCubit>(create: (_) => DependencyProvider.get<HomeCubit>()..load(), child: const _HomeView());
+  Widget build(BuildContext context) => BlocProvider<HomeCubit>(
+    create: (_) => DependencyProvider.get<HomeCubit>()..initialize(),
+    child: const _HomeView(),
+  );
 }
 
 class _HomeView extends StatelessWidget {
@@ -59,7 +61,10 @@ class _HomeView extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: Text('Tricount', style: context.texts.heading.copyWith(fontWeight: FontWeight.bold)),
+                    child: Text(
+                      LocaleKeys.brandName.tr(context: context),
+                      style: context.texts.heading.copyWith(fontWeight: FontWeight.bold),
+                    ),
                   ),
                 ],
               ),

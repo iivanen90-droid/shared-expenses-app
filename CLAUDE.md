@@ -16,6 +16,7 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
 - Bootstrap: binding → debug semantics → await localization → await portraitUp → DI → await ApplicationInitializer → runApp.
   Only the initializer installs global error handlers; successful startup does not repeat on splash.
 - Register each feature's three DI resolvers in common after core, in data → domain → ui order.
+  Specify the dependency type in resolver lookups, for example `DependencyProvider.get<HomeGroupsRepository>()`.
 - Routes are typed in router. Start at splash; buildPlatformPage uses SDK MaterialPage / CupertinoPage by platform.
   StatefulShellRoute already provides two tabs with independent stacks. Do not add business screens outside the task.
 - Pages call typed routes through the public router barrel in UI handlers. Do not pass navigation callbacks from route builders.
