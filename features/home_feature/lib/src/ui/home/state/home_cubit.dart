@@ -13,7 +13,7 @@ class HomeCubit extends SafeCubitWrapper<HomeState> {
   final HomeAnalytics _analytics;
   final HomeGroupsInteractor _interactor;
 
-  void load() {
+  void initialize() {
     if (isClosed) return;
     _analytics.onOpened();
     emit(HomeState(status: HomeStatus.loaded, groups: List<HomeGroup>.unmodifiable(_interactor.getGroups())));
