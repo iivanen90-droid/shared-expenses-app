@@ -13,6 +13,7 @@ dependencies:
   flutter_bloc:
   freezed_annotation:
   easy_localization:
+  emoji_picker_flutter:
   router:
   objectbox:
   objectbox_flutter_libs:

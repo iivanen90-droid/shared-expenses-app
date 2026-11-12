@@ -3,8 +3,8 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-class AddTricountSheet extends StatelessWidget {
-  const AddTricountSheet({required this.onStart, required this.onJoin, super.key});
+class AddGroupSheet extends StatelessWidget {
+  const AddGroupSheet({required this.onStart, required this.onJoin, super.key});
 
   final VoidCallback onStart;
   final VoidCallback onJoin;
@@ -38,7 +38,7 @@ class AddTricountSheet extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            _TricountAction(
+            _GroupActionTile(
               identifier: 'add_tricount_start',
               icon: Icons.add_rounded,
               iconBackground: colors.primaryContainer,
@@ -48,7 +48,7 @@ class AddTricountSheet extends StatelessWidget {
               onTap: onStart,
             ),
             const SizedBox(height: 8),
-            _TricountAction(
+            _GroupActionTile(
               identifier: 'add_tricount_join',
               icon: Icons.link_rounded,
               iconBackground: colors.tertiaryContainer,
@@ -64,8 +64,8 @@ class AddTricountSheet extends StatelessWidget {
   }
 }
 
-class _TricountAction extends StatelessWidget {
-  const _TricountAction({
+class _GroupActionTile extends StatelessWidget {
+  const _GroupActionTile({
     required this.identifier,
     required this.icon,
     required this.iconBackground,

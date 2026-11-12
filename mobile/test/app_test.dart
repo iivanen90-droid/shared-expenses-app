@@ -218,10 +218,12 @@ void main() {
       await tester.enterText(name, '  Mountain Trip  ');
       await tester.tap(find.byTooltip('Виберіть емоджі'));
       await tester.pumpAndSettle();
-      await tester.tap(find.text('🏔️'));
+      expect(find.byType(BottomSheet), findsOneWidget);
+      await tester.tap(find.text('😀').hitTestable().first);
       await tester.pumpAndSettle();
       await tester.tap(find.byKey(const ValueKey('group_currency')));
       await tester.pumpAndSettle();
+      expect(find.byType(BottomSheet), findsOneWidget);
       await tester.enterText(find.byKey(const ValueKey('currency_search')), 'гривня');
       await tester.pumpAndSettle();
       await tester.tap(find.text('українська гривня'));
@@ -238,12 +240,12 @@ void main() {
       expect(repository.attempts, 0);
       final first = find.byType(TextFormField).at(1);
       await tester.enterText(first, 'First draft');
-      await tester.enterText(first, '  Alex  ');
+      await tester.enterText(first, 'Remove me');
       await tester.ensureVisible(add);
       await tester.tap(add);
       await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextFormField).at(2), 'Remove me');
-      final remove = find.byTooltip('Видалити учасника').last;
+      await tester.enterText(find.byType(TextFormField).at(2), '  Alex  ');
+      final remove = find.byTooltip('Видалити учасника').first;
       await tester.ensureVisible(remove);
       await tester.tap(remove);
       await tester.pumpAndSettle();
@@ -260,7 +262,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('Tricount створено'), findsOneWidget);
       expect(repository.groups.first.currencyCode, 'UAH');
-      expect(repository.groups.first.emoji, '🏔️');
+      expect(repository.groups.first.emoji, '😀');
       expect(repository.groups.first.participants, ['Alex']);
 
       final heading = find.text('Tricount створено');
@@ -289,7 +291,7 @@ void main() {
     }, repository: repository);
   });
 
-  testWidgets('a blank participant above the viewport prevents saving a long form', (tester) async {
+  testWidgets('repeated submits reveal a blank participant above the viewport without saving', (tester) async {
     final repository = _GroupsRepository();
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
@@ -305,7 +307,9 @@ void main() {
       await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text('USD')));
       await tester.pumpAndSettle();
 
-      final scrollable = find.descendant(of: find.byType(Form), matching: find.byType(Scrollable)).first;
+      final scrollable = find
+          .descendant(of: find.byKey(const ValueKey('group_form_scroll')), matching: find.byType(Scrollable))
+          .first;
       final add = find.text('Додати учасника');
       for (var i = 0; i < 18; i++) {
         await tester.scrollUntilVisible(add, 100, scrollable: scrollable);
@@ -319,11 +323,17 @@ void main() {
       }
 
       final create = find.text('Створити групу');
-      await tester.scrollUntilVisible(create, 100, scrollable: scrollable);
-      await tester.tap(create);
-      await tester.pumpAndSettle();
-      expect(repository.attempts, 0);
-      expect(find.text('Введіть ім’я учасника').hitTestable(), findsOneWidget);
+      final participantError = find.text('Введіть ім’я учасника');
+      expect(participantError, findsNothing);
+
+      for (var attempt = 0; attempt < 2; attempt++) {
+        await tester.scrollUntilVisible(create, 100, scrollable: scrollable);
+        expect(participantError.hitTestable(), findsNothing);
+        await tester.tap(create);
+        await tester.pumpAndSettle();
+        expect(repository.attempts, 0);
+        expect(participantError.hitTestable(), findsOneWidget);
+      }
     }, repository: repository);
   });
 
