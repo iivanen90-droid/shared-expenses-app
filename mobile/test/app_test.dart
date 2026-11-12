@@ -270,7 +270,7 @@ void main() {
     }, repository: repository);
   });
 
-  testWidgets('a blank participant above the viewport prevents saving a long form', (tester) async {
+  testWidgets('repeated submits reveal a blank participant above the viewport without saving', (tester) async {
     final repository = _GroupsRepository();
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
@@ -302,11 +302,17 @@ void main() {
       }
 
       final create = find.text('Створити групу');
-      await tester.scrollUntilVisible(create, 100, scrollable: scrollable);
-      await tester.tap(create);
-      await tester.pumpAndSettle();
-      expect(repository.attempts, 0);
-      expect(find.text('Введіть ім’я учасника').hitTestable(), findsOneWidget);
+      final participantError = find.text('Введіть ім’я учасника');
+      expect(participantError, findsNothing);
+
+      for (var attempt = 0; attempt < 2; attempt++) {
+        await tester.scrollUntilVisible(create, 100, scrollable: scrollable);
+        expect(participantError.hitTestable(), findsNothing);
+        await tester.tap(create);
+        await tester.pumpAndSettle();
+        expect(repository.attempts, 0);
+        expect(participantError.hitTestable(), findsOneWidget);
+      }
     }, repository: repository);
   });
 

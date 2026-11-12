@@ -42,7 +42,7 @@ final class CreateGroupCubit extends SafeCubitWrapper<CreateGroupState> {
     final draft = state;
     final currency = draft.currency;
     if (draft.nameMissing || currency == null || draft.firstUnnamedParticipant != null) {
-      emit(draft.copyWith(validationAttempts: draft.validationAttempts + 1));
+      emit(draft.copyWith(showValidationErrors: true));
       return;
     }
     emit(draft.copyWith(status: CreateGroupStatus.saving));

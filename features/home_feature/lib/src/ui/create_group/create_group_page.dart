@@ -53,7 +53,16 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
     if (mounted && currency != null) context.read<CreateGroupCubit>().selectCurrency(currency);
   }
 
-  void _scrollToFirstError(CreateGroupState state) {
+  Future<void> _submit() async {
+    final cubit = context.read<CreateGroupCubit>();
+    await cubit.create();
+    final state = cubit.state;
+    if (mounted && state.canEdit && state.showValidationErrors) {
+      await _revealFirstInvalidField(state);
+    }
+  }
+
+  Future<void> _revealFirstInvalidField(CreateGroupState state) async {
     final participant = state.firstUnnamedParticipant;
     final key = switch (state) {
       CreateGroupState(nameMissing: true) => _nameKey,
@@ -61,28 +70,28 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
       _ when participant != null => GlobalObjectKey(participant.id),
       _ => null,
     };
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final field = key?.currentContext;
-      if (field != null && field.mounted) Scrollable.ensureVisible(field);
-    });
+    if (key == null) return;
+
+    // In a long form, the invalid field can be above the submit button and off-screen.
+    // Wait for the inline errors to lay out before scrolling to the field.
+    await WidgetsBinding.instance.endOfFrame;
+    final field = key.currentContext;
+    if (mounted && field != null && field.mounted) await Scrollable.ensureVisible(field);
   }
 
   @override
   Widget build(BuildContext context) => BlocConsumer<CreateGroupCubit, CreateGroupState>(
-    listenWhen: (previous, current) =>
-        previous.validationAttempts != current.validationAttempts || previous.groupId != current.groupId,
+    listenWhen: (previous, current) => previous.groupId != current.groupId,
     listener: (context, state) {
       final id = state.groupId;
       if (id != null) {
         context.goTo(GroupCreatedRoute(groupId: id));
-      } else {
-        _scrollToFirstError(state);
       }
     },
     builder: (context, state) {
       final cubit = context.read<CreateGroupCubit>();
       final canEdit = state.canEdit;
-      final showErrors = state.validationAttempts > 0;
+      final showErrors = state.showValidationErrors;
       final currency = state.currency;
       return PopScope(
         canPop: canEdit,
@@ -197,7 +206,7 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
                     ),
                   const SizedBox(height: 16),
                   FilledButton(
-                    onPressed: canEdit ? cubit.create : null,
+                    onPressed: canEdit ? _submit : null,
                     child: Text(
                       (state.status == CreateGroupStatus.saving ? LocaleKeys.groupSaving : LocaleKeys.groupCreate).tr(
                         context: context,

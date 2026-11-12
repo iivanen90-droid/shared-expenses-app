@@ -17,7 +17,7 @@ mixin _$CreateGroupState {
   String get name;
   GroupCurrency? get currency;
   List<ParticipantDraft> get participants;
-  int get validationAttempts;
+  bool get showValidationErrors;
   CreateGroupStatus get status;
   int? get groupId;
 
@@ -37,8 +37,8 @@ mixin _$CreateGroupState {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.currency, currency) || other.currency == currency) &&
             const DeepCollectionEquality().equals(other.participants, participants) &&
-            (identical(other.validationAttempts, validationAttempts) ||
-                other.validationAttempts == validationAttempts) &&
+            (identical(other.showValidationErrors, showValidationErrors) ||
+                other.showValidationErrors == showValidationErrors) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.groupId, groupId) || other.groupId == groupId));
   }
@@ -50,14 +50,14 @@ mixin _$CreateGroupState {
     name,
     currency,
     const DeepCollectionEquality().hash(participants),
-    validationAttempts,
+    showValidationErrors,
     status,
     groupId,
   );
 
   @override
   String toString() {
-    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, validationAttempts: $validationAttempts, status: $status, groupId: $groupId)';
+    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, showValidationErrors: $showValidationErrors, status: $status, groupId: $groupId)';
   }
 }
 
@@ -71,7 +71,7 @@ abstract mixin class $CreateGroupStateCopyWith<$Res> {
     String name,
     GroupCurrency? currency,
     List<ParticipantDraft> participants,
-    int validationAttempts,
+    bool showValidationErrors,
     CreateGroupStatus status,
     int? groupId,
   });
@@ -93,7 +93,7 @@ class _$CreateGroupStateCopyWithImpl<$Res> implements $CreateGroupStateCopyWith<
     Object? name = null,
     Object? currency = freezed,
     Object? participants = null,
-    Object? validationAttempts = null,
+    Object? showValidationErrors = null,
     Object? status = null,
     Object? groupId = freezed,
   }) {
@@ -115,10 +115,10 @@ class _$CreateGroupStateCopyWithImpl<$Res> implements $CreateGroupStateCopyWith<
             ? _self.participants
             : participants // ignore: cast_nullable_to_non_nullable
                   as List<ParticipantDraft>,
-        validationAttempts: null == validationAttempts
-            ? _self.validationAttempts
-            : validationAttempts // ignore: cast_nullable_to_non_nullable
-                  as int,
+        showValidationErrors: null == showValidationErrors
+            ? _self.showValidationErrors
+            : showValidationErrors // ignore: cast_nullable_to_non_nullable
+                  as bool,
         status: null == status
             ? _self.status
             : status // ignore: cast_nullable_to_non_nullable
@@ -226,7 +226,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
       String name,
       GroupCurrency? currency,
       List<ParticipantDraft> participants,
-      int validationAttempts,
+      bool showValidationErrors,
       CreateGroupStatus status,
       int? groupId,
     )?
@@ -241,7 +241,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
           _that.name,
           _that.currency,
           _that.participants,
-          _that.validationAttempts,
+          _that.showValidationErrors,
           _that.status,
           _that.groupId,
         );
@@ -270,7 +270,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
       String name,
       GroupCurrency? currency,
       List<ParticipantDraft> participants,
-      int validationAttempts,
+      bool showValidationErrors,
       CreateGroupStatus status,
       int? groupId,
     )
@@ -284,7 +284,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
           _that.name,
           _that.currency,
           _that.participants,
-          _that.validationAttempts,
+          _that.showValidationErrors,
           _that.status,
           _that.groupId,
         );
@@ -312,7 +312,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
       String name,
       GroupCurrency? currency,
       List<ParticipantDraft> participants,
-      int validationAttempts,
+      bool showValidationErrors,
       CreateGroupStatus status,
       int? groupId,
     )?
@@ -326,7 +326,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
           _that.name,
           _that.currency,
           _that.participants,
-          _that.validationAttempts,
+          _that.showValidationErrors,
           _that.status,
           _that.groupId,
         );
@@ -344,7 +344,7 @@ class _CreateGroupState extends CreateGroupState {
     this.name = '',
     this.currency,
     this.participants = const <ParticipantDraft>[],
-    this.validationAttempts = 0,
+    this.showValidationErrors = false,
     this.status = CreateGroupStatus.idle,
     this.groupId,
   }) : super._();
@@ -362,7 +362,7 @@ class _CreateGroupState extends CreateGroupState {
   final List<ParticipantDraft> participants;
   @override
   @JsonKey()
-  final int validationAttempts;
+  final bool showValidationErrors;
   @override
   @JsonKey()
   final CreateGroupStatus status;
@@ -386,8 +386,8 @@ class _CreateGroupState extends CreateGroupState {
             (identical(other.name, name) || other.name == name) &&
             (identical(other.currency, currency) || other.currency == currency) &&
             const DeepCollectionEquality().equals(other.participants, participants) &&
-            (identical(other.validationAttempts, validationAttempts) ||
-                other.validationAttempts == validationAttempts) &&
+            (identical(other.showValidationErrors, showValidationErrors) ||
+                other.showValidationErrors == showValidationErrors) &&
             (identical(other.status, status) || other.status == status) &&
             (identical(other.groupId, groupId) || other.groupId == groupId));
   }
@@ -399,14 +399,14 @@ class _CreateGroupState extends CreateGroupState {
     name,
     currency,
     const DeepCollectionEquality().hash(participants),
-    validationAttempts,
+    showValidationErrors,
     status,
     groupId,
   );
 
   @override
   String toString() {
-    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, validationAttempts: $validationAttempts, status: $status, groupId: $groupId)';
+    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, showValidationErrors: $showValidationErrors, status: $status, groupId: $groupId)';
   }
 }
 
@@ -421,7 +421,7 @@ abstract mixin class _$CreateGroupStateCopyWith<$Res> implements $CreateGroupSta
     String name,
     GroupCurrency? currency,
     List<ParticipantDraft> participants,
-    int validationAttempts,
+    bool showValidationErrors,
     CreateGroupStatus status,
     int? groupId,
   });
@@ -443,7 +443,7 @@ class __$CreateGroupStateCopyWithImpl<$Res> implements _$CreateGroupStateCopyWit
     Object? name = null,
     Object? currency = freezed,
     Object? participants = null,
-    Object? validationAttempts = null,
+    Object? showValidationErrors = null,
     Object? status = null,
     Object? groupId = freezed,
   }) {
@@ -465,10 +465,10 @@ class __$CreateGroupStateCopyWithImpl<$Res> implements _$CreateGroupStateCopyWit
             ? _self.participants
             : participants // ignore: cast_nullable_to_non_nullable
                   as List<ParticipantDraft>,
-        validationAttempts: null == validationAttempts
-            ? _self.validationAttempts
-            : validationAttempts // ignore: cast_nullable_to_non_nullable
-                  as int,
+        showValidationErrors: null == showValidationErrors
+            ? _self.showValidationErrors
+            : showValidationErrors // ignore: cast_nullable_to_non_nullable
+                  as bool,
         status: null == status
             ? _self.status
             : status // ignore: cast_nullable_to_non_nullable

@@ -16,7 +16,7 @@ abstract class CreateGroupState with _$CreateGroupState {
     @Default('') String name,
     GroupCurrency? currency,
     @Default(<ParticipantDraft>[]) List<ParticipantDraft> participants,
-    @Default(0) int validationAttempts,
+    @Default(false) bool showValidationErrors,
     @Default(CreateGroupStatus.idle) CreateGroupStatus status,
     int? groupId,
   }) = _CreateGroupState;
