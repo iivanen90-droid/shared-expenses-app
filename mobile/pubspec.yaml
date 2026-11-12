@@ -15,6 +15,7 @@ dependencies:
   objectbox_flutter_libs:
 dev_dependencies:
   get_it:
+  home_feature:
   flutter_test:
     sdk: flutter
   shared_preferences:

@@ -1,8 +1,10 @@
+import 'package:core/core.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
 
 abstract interface class HomeGroupsInteractor {
-  List<HomeGroup> getGroups();
+  Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups();
+  Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group);
 }
 
 final class HomeGroupsInteractorImpl implements HomeGroupsInteractor {
@@ -11,5 +13,8 @@ final class HomeGroupsInteractorImpl implements HomeGroupsInteractor {
   final HomeGroupsRepository _repository;
 
   @override
-  List<HomeGroup> getGroups() => _repository.getGroups();
+  Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups() => _repository.watchGroups();
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) => _repository.create(group);
 }

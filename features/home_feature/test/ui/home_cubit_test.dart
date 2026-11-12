@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
+import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
 import 'package:home_feature/src/domain/interactor/home_groups_interactor.dart';
 import 'package:home_feature/src/ui/home/home_analytics.dart';
 import 'package:home_feature/src/ui/home/home_page.dart';
@@ -23,7 +24,10 @@ class _Groups implements HomeGroupsInteractor {
   final List<HomeGroup> groups;
 
   @override
-  List<HomeGroup> getGroups() => groups;
+  Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups() => Stream.value(Right(groups));
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) => throw UnimplementedError();
 }
 
 class _TranslationsLoader extends AssetLoader {
@@ -46,12 +50,14 @@ void main() {
     }
     loader = _TranslationsLoader(data);
   });
-  test('opening Home loads the groups and emits the screen event', () {
-    const groups = [HomeGroup(name: 'Kyiv', emoji: '☕')];
+  test('opening Home loads the groups and emits the screen event', () async {
+    const groups = [HomeGroup(id: 1, currencyCode: 'UAH', participants: [], name: 'Kyiv', emoji: '☕')];
     final analytics = _Analytics();
     final cubit = HomeCubit(analytics: analytics, interactor: const _Groups(groups));
     addTearDown(cubit.close);
+    final loaded = cubit.stream.firstWhere((state) => state.status == HomeStatus.loaded);
     cubit.initialize();
+    await loaded;
     expect(cubit.state.status, HomeStatus.loaded);
     expect(cubit.state.groups, groups);
     verify(analytics.onOpened).called(1);
