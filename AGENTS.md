@@ -32,6 +32,9 @@ and agent instructions in English. Keep application translations in their respec
   Direct pushes to `develop` and `main`, force pushes, and deleting `develop` are prohibited.
   Code review and one independent approval are required before merging, including for administrators.
   The detailed workflow is in [CLAUDE.md](CLAUDE.md).
+- Include the direct Trello card link in the PR description under `## Trello`, including PRs opened via API or CLI.
+  If a task comes from Trello and the link is missing, ask for the card URL before publishing the PR.
+  For work without a card, write "No Trello card". See the [PR template](.github/pull_request_template.md).
 - Preserve the user's uncommitted changes. Modify only files required for the task.
 - The app shell is in `mobile/lib/`; platform projects are in `mobile/android/` and `mobile/ios/`.
   Shared code is in `packages/<name>/lib/`; features use
