@@ -11,5 +11,10 @@
   "startNewTricountDescription": "Створіть Tricount з нуля.",
   "joinExistingTricount": "Приєднатися до наявного Tricount",
   "joinExistingTricountDescription": "Скористайтеся посиланням-запрошенням.",
-  "noGroups": "У вас ще немає груп"
+  "noGroups": "У вас ще немає груп",
+  "joinGroupTitle": "Приєднатися до Tricount",
+  "joinGroupInstructions": "Попросіть учасника надіслати посилання-запрошення й вставте його нижче.",
+  "joinGroupLinkHint": "Вставте посилання тут",
+  "joinGroupAction": "Приєднатися",
+  "joinGroupUnavailable": "Приєднання буде доступне пізніше"
 }

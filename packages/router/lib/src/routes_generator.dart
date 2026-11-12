@@ -28,7 +28,14 @@ class SplashRoute extends GoRouteData with $SplashRoute implements RouteModel {
 
 @TypedStatefulShellRoute<MainShellRoute>(
   branches: [
-    TypedStatefulShellBranch<HomeBranch>(routes: [TypedGoRoute<HomeRoute>(path: HomeRoute.path)]),
+    TypedStatefulShellBranch<HomeBranch>(
+      routes: [
+        TypedGoRoute<HomeRoute>(
+          path: HomeRoute.path,
+          routes: [TypedGoRoute<JoinGroupRoute>(path: 'join')],
+        ),
+      ],
+    ),
     TypedStatefulShellBranch<ProfileBranch>(routes: [TypedGoRoute<ProfileRoute>(path: ProfileRoute.path)]),
   ],
 )
@@ -57,6 +64,17 @@ class HomeRoute extends GoRouteData with $HomeRoute implements RouteModel {
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
       buildPlatformPage(context: context, state: state, child: const HomePage());
+}
+
+@immutable
+class JoinGroupRoute extends GoRouteData with $JoinGroupRoute implements RouteModel {
+  const JoinGroupRoute();
+
+  static final GlobalKey<NavigatorState> $parentNavigatorKey = GoRouterConfig.rootNavigatorKey;
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const JoinGroupPage());
 }
 
 @immutable

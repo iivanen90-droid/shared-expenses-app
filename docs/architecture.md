@@ -214,7 +214,8 @@ After successful initialization, splash calls context.goTo(const HomeRoute()). g
 so Back at a tab root does not reopen splash. No separate native splash has been added.
 Home at /home reads demo groups from the local source through its repository, interactor, and Cubit.
 An empty list shows a localized message. New Tricount opens a modal bottom sheet above the tab shell.
-Start New Tricount and Join Existing Tricount have separate placeholder callbacks. Profile at /profile
+Join Existing Tricount opens the typed /home/join route above the tab shell. The page shows a local
+notice on submit. Start New Tricount remains a placeholder. Profile at /profile
 is a blank placeholder.
 State is not restored after process termination.
 

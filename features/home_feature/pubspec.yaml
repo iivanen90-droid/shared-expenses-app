@@ -13,6 +13,7 @@ dependencies:
   flutter_bloc:
   freezed_annotation:
   easy_localization:
+  router:
 dev_dependencies:
   flutter_test:
     sdk: flutter
