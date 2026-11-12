@@ -11,5 +11,10 @@
   "startNewTricountDescription": "Start a new tricount from scratch.",
   "joinExistingTricount": "Join Existing Tricount",
   "joinExistingTricountDescription": "Use an invite link to join an existing tricount.",
-  "noGroups": "You don’t have any groups yet"
+  "noGroups": "You don’t have any groups yet",
+  "joinGroupTitle": "Join a tricount",
+  "joinGroupInstructions": "Ask a participant for an invite link, then paste it below.",
+  "joinGroupLinkHint": "Paste your link here",
+  "joinGroupAction": "Join",
+  "joinGroupUnavailable": "Joining will be available later"
 }

@@ -4,8 +4,9 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
-import 'package:home_feature/src/ui/home/state/home_cubit.dart';
 import 'package:home_feature/src/ui/home/add_group_sheet.dart';
+import 'package:home_feature/src/ui/home/state/home_cubit.dart';
+import 'package:router/router.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 class HomePage extends StatelessWidget {
@@ -25,8 +26,17 @@ class _HomeView extends StatelessWidget {
     // The creation flow will be connected here when it exists.
   }
 
-  void _joinExistingTricount() {
-    // The invitation flow will be connected here when it exists.
+  Future<void> _openAddGroupSheet(BuildContext context) async {
+    final join = await showModalBottomSheet<bool>(
+      context: context,
+      useRootNavigator: true,
+      useSafeArea: true,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) =>
+          AddGroupSheet(onStart: _startNewTricount, onJoin: () => Navigator.of(sheetContext).pop(true)),
+    );
+    if (context.mounted && join == true) await context.pushTo<void>(const JoinGroupRoute());
   }
 
   @override
@@ -89,14 +99,7 @@ class _HomeView extends StatelessWidget {
               child: Semantics(
                 identifier: 'home_new_tricount',
                 child: FilledButton.tonalIcon(
-                  onPressed: () => showModalBottomSheet<void>(
-                    context: context,
-                    useRootNavigator: true,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    showDragHandle: true,
-                    builder: (_) => AddGroupSheet(onStart: _startNewTricount, onJoin: _joinExistingTricount),
-                  ),
+                  onPressed: () => _openAddGroupSheet(context),
                   icon: const Icon(Icons.add),
                   label: Text(LocaleKeys.newTricount.tr(context: context), textAlign: TextAlign.center),
                 ),

@@ -16,4 +16,9 @@ abstract class LocaleKeys {
   static const joinExistingTricount = 'joinExistingTricount';
   static const joinExistingTricountDescription = 'joinExistingTricountDescription';
   static const noGroups = 'noGroups';
+  static const joinGroupTitle = 'joinGroupTitle';
+  static const joinGroupInstructions = 'joinGroupInstructions';
+  static const joinGroupLinkHint = 'joinGroupLinkHint';
+  static const joinGroupAction = 'joinGroupAction';
+  static const joinGroupUnavailable = 'joinGroupUnavailable';
 }

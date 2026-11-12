@@ -35,7 +35,21 @@ RouteBase get $mainShellRoute => StatefulShellRouteData.$route(
   branches: [
     StatefulShellBranchData.$branch(
       navigatorKey: HomeBranch.$navigatorKey,
-      routes: [GoRouteData.$route(path: '/home', hasOverriddenOnExit: false, factory: $HomeRoute._fromState)],
+      routes: [
+        GoRouteData.$route(
+          path: '/home',
+          hasOverriddenOnExit: false,
+          factory: $HomeRoute._fromState,
+          routes: [
+            GoRouteData.$route(
+              path: 'join',
+              hasOverriddenOnExit: false,
+              parentNavigatorKey: JoinGroupRoute.$parentNavigatorKey,
+              factory: $JoinGroupRoute._fromState,
+            ),
+          ],
+        ),
+      ],
     ),
     StatefulShellBranchData.$branch(
       navigatorKey: ProfileBranch.$navigatorKey,
@@ -53,6 +67,25 @@ mixin $HomeRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/home');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $JoinGroupRoute on GoRouteData {
+  static JoinGroupRoute _fromState(GoRouterState state) => const JoinGroupRoute();
+
+  @override
+  String get location => GoRouteData.$location('/home/join');
 
   @override
   void go(BuildContext context) => context.go(location);
