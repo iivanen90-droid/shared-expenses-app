@@ -113,7 +113,7 @@ void main() {
     }
   });
 
-  testWidgets('New Tricount opens a modal above Home and Join remains a placeholder', (tester) async {
+  testWidgets('New group opens a modal above Home and Join remains a placeholder', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       final home = find.bySemanticsIdentifier('home_title');
@@ -184,20 +184,22 @@ void main() {
 
       final heading = find.bySemanticsIdentifier('add_tricount_title');
       expect(find.text('Додати'), findsOneWidget);
-      expect(find.text('Створити новий Tricount'), findsOneWidget);
-      expect(find.text('Приєднатися до наявного Tricount'), findsOneWidget);
+      expect(find.text('Створити нову групу'), findsOneWidget);
+      expect(find.text('Приєднатися до наявної групи'), findsOneWidget);
       await tester.element(heading).setLocale(const Locale('en'));
       await tester.pumpAndSettle();
       expect(find.text('Add'), findsOneWidget);
-      expect(find.text('Start New Tricount'), findsOneWidget);
-      expect(find.text('Join Existing Tricount'), findsOneWidget);
+      expect(find.text('Start a new group'), findsOneWidget);
+      expect(find.text('Join an existing group'), findsOneWidget);
     });
   });
 
   testWidgets('the form validates fields, preserves edits on save failure and confirms only a successful write', (
     tester,
   ) async {
-    final repository = _GroupsRepository()..failNextSave = true;
+    final repository = _GroupsRepository()
+      ..failNextSave = true
+      ..groups.add(const HomeGroup(id: 40, name: 'Earlier group', emoji: '⭐', currencyCode: 'EUR', participants: []));
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
@@ -254,19 +256,39 @@ void main() {
       expect(find.text('Не вдалося зберегти групу. Спробуйте ще раз.'), findsOneWidget);
       expect(find.text('  Mountain Trip  '), findsOneWidget);
       expect(find.text('  Alex  '), findsOneWidget);
-      expect(find.text('Tricount створено'), findsNothing);
+      expect(find.text('Групу створено'), findsNothing);
       await tester.ensureVisible(create);
       await tester.tap(create);
       await tester.pumpAndSettle();
-      expect(find.text('Tricount створено'), findsOneWidget);
-      expect(repository.groups.single.currencyCode, 'UAH');
-      expect(repository.groups.single.emoji, '😀');
-      expect(repository.groups.single.participants, ['Alex']);
+      expect(find.text('Групу створено'), findsOneWidget);
+      expect(repository.groups.first.currencyCode, 'UAH');
+      expect(repository.groups.first.emoji, '😀');
+      expect(repository.groups.first.participants, ['Alex']);
+
+      final heading = find.text('Групу створено');
+      expect(find.text('До групи'), findsOneWidget);
+      await tester.element(heading).setLocale(const Locale('en'));
+      await tester.pumpAndSettle();
+      expect(find.text('Group created'), findsOneWidget);
+      await tester.tap(find.text("Let's go!"));
+      await tester.pumpAndSettle();
+      final groupTitle = find.descendant(of: find.byType(AppBar), matching: find.text('Mountain Trip'));
+      expect(groupTitle, findsOneWidget);
+      expect(find.bySemanticsIdentifier('group_details'), findsOneWidget);
 
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
-      expect(find.text('Mountain Trip'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      expect(find.text('Group created'), findsNothing);
       expect(name, findsNothing);
+      await tester.tap(find.text('Mountain Trip'));
+      await tester.pumpAndSettle();
+      expect(groupTitle, findsOneWidget);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Earlier group'));
+      await tester.pumpAndSettle();
+      expect(find.descendant(of: find.byType(AppBar), matching: find.text('Earlier group')), findsOneWidget);
     }, repository: repository);
   });
 
@@ -322,7 +344,7 @@ void main() {
       expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
       expect(find.text('Tricount'), findsOneWidget);
       expect(find.text('У вас ще немає груп'), findsOneWidget);
-      expect(find.text('Новий Tricount'), findsOneWidget);
+      expect(find.text('Нова група'), findsOneWidget);
       final context = tester.element(find.bySemanticsIdentifier('home_title'));
       expect(Theme.of(context).colorScheme.primary, context.colors.primary);
       expect(tester.takeException(), isNull);
@@ -427,6 +449,14 @@ class _GroupsRepository implements HomeGroupsRepository {
     groups.insert(0, saved);
     _updates.add(Right(List.of(groups)));
     return Right(saved);
+  }
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> getGroupById(int id) async {
+    for (final group in groups) {
+      if (group.id == id) return Right(group);
+    }
+    return const Right(null);
   }
 
   Future<void> close() => _updates.close();

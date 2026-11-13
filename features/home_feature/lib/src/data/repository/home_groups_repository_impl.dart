@@ -1,19 +1,20 @@
 import 'package:core/core.dart';
-import 'package:home_feature/src/data/model/home_group_record.dart';
+import 'package:home_feature/src/data/mapper/home_group_mapper.dart';
 import 'package:home_feature/src/data/source/home_groups_source.dart';
 import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
 
 final class HomeGroupsRepositoryImpl implements HomeGroupsRepository {
-  const HomeGroupsRepositoryImpl({required this._source});
+  const HomeGroupsRepositoryImpl({required this._source, required this._mapper});
 
   final HomeGroupsSource _source;
+  final HomeGroupMapper _mapper;
 
   @override
   Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups() async* {
     try {
       await for (final groups in _source.watchGroups()) {
-        yield Right(List<HomeGroup>.unmodifiable(groups.map(_toGroup)));
+        yield Right(List<HomeGroup>.unmodifiable(groups.map(_mapper.toDomain)));
       }
     } on Object {
       yield const Left(GroupsStorageFailure());
@@ -23,25 +24,20 @@ final class HomeGroupsRepositoryImpl implements HomeGroupsRepository {
   @override
   Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) async {
     try {
-      final record = await _source.insert(
-        HomeGroupRecord(
-          name: group.name,
-          emoji: group.emoji,
-          currencyCode: group.currencyCode,
-          participants: group.participants,
-        ),
-      );
-      return Right(_toGroup(record));
+      final record = await _source.insert(_mapper.toRecord(group));
+      return Right(_mapper.toDomain(record));
     } on Object {
       return const Left(GroupsStorageFailure());
     }
   }
 
-  static HomeGroup _toGroup(HomeGroupRecord record) => HomeGroup(
-    id: record.id,
-    name: record.name,
-    emoji: record.emoji,
-    currencyCode: record.currencyCode,
-    participants: List<String>.unmodifiable(record.participants),
-  );
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> getGroupById(int id) async {
+    try {
+      final record = await _source.getGroupById(id);
+      return Right(record == null ? null : _mapper.toDomain(record));
+    } on Object {
+      return const Left(GroupsStorageFailure());
+    }
+  }
 }

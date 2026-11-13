@@ -5,6 +5,7 @@ import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
 abstract interface class HomeGroupsInteractor {
   Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups();
   Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group);
+  Future<Either<GroupsStorageFailure, HomeGroup?>> getGroupById(int id);
 }
 
 final class HomeGroupsInteractorImpl implements HomeGroupsInteractor {
@@ -17,4 +18,7 @@ final class HomeGroupsInteractorImpl implements HomeGroupsInteractor {
 
   @override
   Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) => _repository.create(group);
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> getGroupById(int id) => _repository.getGroupById(id);
 }

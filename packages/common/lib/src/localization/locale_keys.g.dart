@@ -9,12 +9,12 @@ abstract class LocaleKeys {
   static const retry = 'retry';
   static const homeTab = 'homeTab';
   static const profileTab = 'profileTab';
-  static const newTricount = 'newTricount';
-  static const addTricount = 'addTricount';
-  static const startNewTricount = 'startNewTricount';
-  static const startNewTricountDescription = 'startNewTricountDescription';
-  static const joinExistingTricount = 'joinExistingTricount';
-  static const joinExistingTricountDescription = 'joinExistingTricountDescription';
+  static const newGroup = 'newGroup';
+  static const addGroup = 'addGroup';
+  static const startNewGroup = 'startNewGroup';
+  static const startNewGroupDescription = 'startNewGroupDescription';
+  static const joinExistingGroup = 'joinExistingGroup';
+  static const joinExistingGroupDescription = 'joinExistingGroupDescription';
   static const noGroups = 'noGroups';
   static const groupCreateTitle = 'groupCreateTitle';
   static const groupName = 'groupName';
@@ -37,4 +37,8 @@ abstract class LocaleKeys {
   static const groupSaveFailed = 'groupSaveFailed';
   static const groupsLoadFailed = 'groupsLoadFailed';
   static const groupCreated = 'groupCreated';
+  static const groupGoTo = 'groupGoTo';
+  static const groupDetailsTitle = 'groupDetailsTitle';
+  static const groupMissing = 'groupMissing';
+  static const groupLoadFailed = 'groupLoadFailed';
 }
