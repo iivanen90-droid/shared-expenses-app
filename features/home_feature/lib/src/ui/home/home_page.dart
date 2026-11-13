@@ -113,7 +113,7 @@ class _HomeView extends StatelessWidget {
                 child: FilledButton.tonalIcon(
                   onPressed: () => _openSheet(context),
                   icon: const Icon(Icons.add),
-                  label: Text(LocaleKeys.newTricount.tr(context: context), textAlign: TextAlign.center),
+                  label: Text(LocaleKeys.newGroup.tr(context: context), textAlign: TextAlign.center),
                 ),
               ),
             ),

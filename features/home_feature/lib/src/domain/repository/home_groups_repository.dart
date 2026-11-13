@@ -8,5 +8,5 @@ final class GroupsStorageFailure extends Failure {
 abstract interface class HomeGroupsRepository {
   Stream<Either<GroupsStorageFailure, List<HomeGroup>>> watchGroups();
   Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group);
-  Future<Either<GroupsStorageFailure, HomeGroup?>> find(int id);
+  Future<Either<GroupsStorageFailure, HomeGroup?>> getGroupById(int id);
 }

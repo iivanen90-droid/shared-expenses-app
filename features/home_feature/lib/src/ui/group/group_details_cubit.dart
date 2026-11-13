@@ -1,26 +1,15 @@
 import 'package:common/common.dart';
-import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/domain/interactor/home_groups_interactor.dart';
-
-part 'group_details_cubit.freezed.dart';
-
-enum GroupDetailsStatus { loading, ready, missing, failed }
-
-@freezed
-abstract class GroupDetailsState with _$GroupDetailsState {
-  const factory GroupDetailsState({@Default(GroupDetailsStatus.loading) GroupDetailsStatus status, HomeGroup? group}) =
-      _GroupDetailsState;
-}
+import 'package:home_feature/src/ui/group/group_details_state.dart';
 
 final class GroupDetailsCubit extends SafeCubitWrapper<GroupDetailsState> {
   GroupDetailsCubit({required this._interactor}) : super(const GroupDetailsState());
 
   final HomeGroupsInteractor _interactor;
 
-  Future<void> load(int id) async {
+  Future<void> initialize(int groupId) async {
     emit(const GroupDetailsState());
-    final result = await _interactor.find(id);
+    final result = await _interactor.getGroupById(groupId);
     result.match(
       (_) => emit(const GroupDetailsState(status: GroupDetailsStatus.failed)),
       (group) => emit(

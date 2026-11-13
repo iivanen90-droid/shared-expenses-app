@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/ui/group/group_details_cubit.dart';
+import 'package:home_feature/src/ui/group/group_details_state.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 class GroupDetailsPage extends StatelessWidget {
@@ -14,7 +15,7 @@ class GroupDetailsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => BlocProvider<GroupDetailsCubit>(
     key: ValueKey(groupId),
-    create: (_) => DependencyProvider.get<GroupDetailsCubit>()..load(groupId),
+    create: (_) => DependencyProvider.get<GroupDetailsCubit>()..initialize(groupId),
     child: BlocBuilder<GroupDetailsCubit, GroupDetailsState>(
       builder: (context, state) {
         final group = state.group;
@@ -32,7 +33,7 @@ class GroupDetailsPage extends StatelessWidget {
                     children: [
                       Text(LocaleKeys.groupLoadFailed.tr(context: context)),
                       TextButton(
-                        onPressed: () => context.read<GroupDetailsCubit>().load(groupId),
+                        onPressed: () => context.read<GroupDetailsCubit>().initialize(groupId),
                         child: Text(LocaleKeys.retry.tr(context: context)),
                       ),
                     ],
