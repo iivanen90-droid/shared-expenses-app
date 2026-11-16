@@ -32,7 +32,11 @@ class SplashRoute extends GoRouteData with $SplashRoute implements RouteModel {
       routes: [
         TypedGoRoute<HomeRoute>(
           path: HomeRoute.path,
-          routes: [TypedGoRoute<JoinGroupRoute>(path: 'join')],
+          routes: [
+            TypedGoRoute<CreateGroupRoute>(path: 'new'),
+            TypedGoRoute<JoinGroupRoute>(path: 'join'),
+            TypedGoRoute<GroupCreatedRoute>(path: 'created/:groupId'),
+          ],
         ),
       ],
     ),
@@ -64,6 +68,27 @@ class HomeRoute extends GoRouteData with $HomeRoute implements RouteModel {
   @override
   Page<void> buildPage(BuildContext context, GoRouterState state) =>
       buildPlatformPage(context: context, state: state, child: const HomePage());
+}
+
+@immutable
+class CreateGroupRoute extends GoRouteData with $CreateGroupRoute implements RouteModel {
+  const CreateGroupRoute();
+  static final GlobalKey<NavigatorState> $parentNavigatorKey = GoRouterConfig.rootNavigatorKey;
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const CreateGroupPage());
+}
+
+@immutable
+class GroupCreatedRoute extends GoRouteData with $GroupCreatedRoute implements RouteModel {
+  const GroupCreatedRoute({required this.groupId});
+  static final GlobalKey<NavigatorState> $parentNavigatorKey = GoRouterConfig.rootNavigatorKey;
+  final int groupId;
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const GroupCreatedPage());
 }
 
 @immutable

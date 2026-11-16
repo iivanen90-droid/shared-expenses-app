@@ -1,17 +1,24 @@
 import 'package:common/common.dart';
+import 'package:core/core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:home_feature/src/ui/join_group/join_group_cubit.dart';
+import 'package:home_feature/src/ui/join_group/join_group_state.dart';
 import 'package:ui_kit/ui_kit.dart';
 
-class JoinGroupPage extends StatefulWidget {
+class JoinGroupPage extends StatelessWidget {
   const JoinGroupPage({super.key});
 
   @override
-  State<JoinGroupPage> createState() => _JoinGroupPageState();
+  Widget build(BuildContext context) => BlocProvider<JoinGroupCubit>(
+    create: (_) => DependencyProvider.get<JoinGroupCubit>(),
+    child: const _JoinGroupView(),
+  );
 }
 
-class _JoinGroupPageState extends State<JoinGroupPage> {
-  bool _showNotice = false;
+class _JoinGroupView extends StatelessWidget {
+  const _JoinGroupView();
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -44,6 +51,7 @@ class _JoinGroupPageState extends State<JoinGroupPage> {
                 ),
                 const SizedBox(height: 16),
                 TextField(
+                  onChanged: context.read<JoinGroupCubit>().updateInviteLink,
                   keyboardType: TextInputType.url,
                   autocorrect: false,
                   decoration: InputDecoration(
@@ -52,30 +60,46 @@ class _JoinGroupPageState extends State<JoinGroupPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: () {
-                    FocusScope.of(context).unfocus();
-                    setState(() => _showNotice = true);
-                  },
-                  child: Text(LocaleKeys.joinGroupAction.tr(context: context)),
-                ),
-                if (_showNotice)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 12),
-                    child: Semantics(
-                      liveRegion: true,
-                      child: Text(
-                        LocaleKeys.joinGroupUnavailable.tr(context: context),
-                        style: context.texts.body,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ),
+                const _JoinGroupActions(),
               ],
             ),
           ),
         ),
       ),
+    ),
+  );
+}
+
+class _JoinGroupActions extends StatelessWidget {
+  const _JoinGroupActions();
+
+  @override
+  Widget build(BuildContext context) => BlocBuilder<JoinGroupCubit, JoinGroupState>(
+    builder: (context, state) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        FilledButton(
+          onPressed: state.canSubmit
+              ? () {
+                  FocusScope.of(context).unfocus();
+                  context.read<JoinGroupCubit>().submit();
+                }
+              : null,
+          child: Text(LocaleKeys.joinGroupAction.tr(context: context)),
+        ),
+        if (state.status == JoinGroupStatus.unavailable)
+          Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: Semantics(
+              liveRegion: true,
+              child: Text(
+                LocaleKeys.joinGroupUnavailable.tr(context: context),
+                style: context.texts.body,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
     ),
   );
 }

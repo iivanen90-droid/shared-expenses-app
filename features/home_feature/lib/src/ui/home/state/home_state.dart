@@ -1,6 +1,6 @@
 part of 'home_cubit.dart';
 
-enum HomeStatus { loading, loaded }
+enum HomeStatus { loading, loaded, failed }
 
 @Freezed(makeCollectionsUnmodifiable: false)
 abstract class HomeState with _$HomeState {

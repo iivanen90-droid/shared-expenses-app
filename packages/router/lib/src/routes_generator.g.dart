@@ -42,10 +42,22 @@ RouteBase get $mainShellRoute => StatefulShellRouteData.$route(
           factory: $HomeRoute._fromState,
           routes: [
             GoRouteData.$route(
+              path: 'new',
+              hasOverriddenOnExit: false,
+              parentNavigatorKey: CreateGroupRoute.$parentNavigatorKey,
+              factory: $CreateGroupRoute._fromState,
+            ),
+            GoRouteData.$route(
               path: 'join',
               hasOverriddenOnExit: false,
               parentNavigatorKey: JoinGroupRoute.$parentNavigatorKey,
               factory: $JoinGroupRoute._fromState,
+            ),
+            GoRouteData.$route(
+              path: 'created/:groupId',
+              hasOverriddenOnExit: false,
+              parentNavigatorKey: GroupCreatedRoute.$parentNavigatorKey,
+              factory: $GroupCreatedRoute._fromState,
             ),
           ],
         ),
@@ -81,11 +93,52 @@ mixin $HomeRoute on GoRouteData {
   void replace(BuildContext context) => context.replace(location);
 }
 
+mixin $CreateGroupRoute on GoRouteData {
+  static CreateGroupRoute _fromState(GoRouterState state) => const CreateGroupRoute();
+
+  @override
+  String get location => GoRouteData.$location('/home/new');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
 mixin $JoinGroupRoute on GoRouteData {
   static JoinGroupRoute _fromState(GoRouterState state) => const JoinGroupRoute();
 
   @override
   String get location => GoRouteData.$location('/home/join');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $GroupCreatedRoute on GoRouteData {
+  static GroupCreatedRoute _fromState(GoRouterState state) =>
+      GroupCreatedRoute(groupId: int.parse(state.pathParameters['groupId']!));
+
+  GroupCreatedRoute get _self => this as GroupCreatedRoute;
+
+  @override
+  String get location => GoRouteData.$location('/home/created/${Uri.encodeComponent(_self.groupId.toString())}');
 
   @override
   void go(BuildContext context) => context.go(location);

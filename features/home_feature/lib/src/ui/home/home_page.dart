@@ -19,24 +19,32 @@ class HomePage extends StatelessWidget {
   );
 }
 
+enum _AddGroupAction { start, join }
+
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
-  void _startNewTricount() {
-    // The creation flow will be connected here when it exists.
-  }
-
-  Future<void> _openAddGroupSheet(BuildContext context) async {
-    final join = await showModalBottomSheet<bool>(
+  Future<void> _openSheet(BuildContext context) async {
+    final action = await showModalBottomSheet<_AddGroupAction>(
       context: context,
       useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) =>
-          AddGroupSheet(onStart: _startNewTricount, onJoin: () => Navigator.of(sheetContext).pop(true)),
+      builder: (sheetContext) => AddGroupSheet(
+        onStart: () => Navigator.of(sheetContext).pop(_AddGroupAction.start),
+        onJoin: () => Navigator.of(sheetContext).pop(_AddGroupAction.join),
+      ),
     );
-    if (context.mounted && join == true) await context.pushTo<void>(const JoinGroupRoute());
+    if (!context.mounted) return;
+    switch (action) {
+      case _AddGroupAction.start:
+        context.goTo(const CreateGroupRoute());
+      case _AddGroupAction.join:
+        await context.pushTo<void>(const JoinGroupRoute());
+      case null:
+        return;
+    }
   }
 
   @override
@@ -74,6 +82,18 @@ class _HomeView extends StatelessWidget {
             child: BlocBuilder<HomeCubit, HomeState>(
               builder: (context, state) => switch (state.status) {
                 HomeStatus.loading => const Center(child: CircularProgressIndicator()),
+                HomeStatus.failed => Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(LocaleKeys.groupsLoadFailed.tr(context: context)),
+                      TextButton(
+                        onPressed: context.read<HomeCubit>().retry,
+                        child: Text(LocaleKeys.retry.tr(context: context)),
+                      ),
+                    ],
+                  ),
+                ),
                 HomeStatus.loaded when state.groups.isEmpty => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -99,7 +119,7 @@ class _HomeView extends StatelessWidget {
               child: Semantics(
                 identifier: 'home_new_tricount',
                 child: FilledButton.tonalIcon(
-                  onPressed: () => _openAddGroupSheet(context),
+                  onPressed: () => _openSheet(context),
                   icon: const Icon(Icons.add),
                   label: Text(LocaleKeys.newTricount.tr(context: context), textAlign: TextAlign.center),
                 ),

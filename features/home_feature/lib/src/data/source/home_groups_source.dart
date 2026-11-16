@@ -1,16 +1,58 @@
-import 'package:home_feature/src/domain/entity/home_group.dart';
+import 'dart:async';
+
+import 'package:core/core.dart';
+import 'package:home_feature/objectbox.g.dart';
+import 'package:home_feature/src/data/model/home_group_record.dart';
 
 abstract interface class HomeGroupsSource {
-  List<HomeGroup> getGroups();
+  Stream<List<HomeGroupRecord>> watchGroups();
+  Future<HomeGroupRecord> insert(HomeGroupRecord group);
 }
 
-final class DemoHomeGroupsSource implements HomeGroupsSource {
-  const DemoHomeGroupsSource();
+final class BoxHomeGroupsSource implements HomeGroupsSource {
+  BoxHomeGroupsSource({FutureOr<Store> Function()? storeOpener})
+    : _openDatabase = (() => ObjectBoxDatabase.open(storeOpener ?? openStore));
+
+  final Future<ObjectBoxDatabase> Function() _openDatabase;
+  Future<ObjectBoxDatabase>? _opening;
+
+  Future<ObjectBoxDatabase> _open() async {
+    try {
+      return await _openDatabase();
+    } on Object {
+      _opening = null;
+      rethrow;
+    }
+  }
+
+  Future<ObjectBoxDatabase> _database() => _opening ??= _open();
 
   @override
-  List<HomeGroup> getGroups() => const [
-    HomeGroup(name: 'Barcelona', emoji: '🏖️'),
-    HomeGroup(name: 'Kyiv', emoji: '☕'),
-    HomeGroup(name: 'Carpathians', emoji: '🏔️'),
-  ];
+  Stream<List<HomeGroupRecord>> watchGroups() async* {
+    final box = (await _database()).box<HomeGroupRecord>();
+    Query<HomeGroupRecord>? activeQuery;
+    try {
+      await for (final query
+          in box.query().order(HomeGroupRecord_.id, flags: Order.descending).watch(triggerImmediately: true)) {
+        activeQuery = query;
+        yield query.find();
+      }
+    } finally {
+      activeQuery?.close();
+    }
+  }
+
+  @override
+  Future<HomeGroupRecord> insert(HomeGroupRecord group) async {
+    final box = (await _database()).box<HomeGroupRecord>();
+    group.id = box.put(group, mode: PutMode.insert);
+    return group;
+  }
+
+  Future<void> close() async {
+    final pending = _opening;
+    if (pending == null) return;
+    final database = await pending.then<ObjectBoxDatabase?>((value) => value, onError: (Object _) => null);
+    database?.close();
+  }
 }

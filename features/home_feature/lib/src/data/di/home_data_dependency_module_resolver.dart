@@ -5,7 +5,12 @@ import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
 
 abstract interface class HomeDataDependencyModuleResolver {
   static void register() {
-    DependencyProvider.registerLazySingleton<HomeGroupsSource>(DemoHomeGroupsSource.new);
+    DependencyProvider.registerLazySingleton<HomeGroupsSource>(
+      BoxHomeGroupsSource.new,
+      dispose: (source) async {
+        if (source is BoxHomeGroupsSource) await source.close();
+      },
+    );
     DependencyProvider.registerLazySingleton<HomeGroupsRepository>(
       () => HomeGroupsRepositoryImpl(source: DependencyProvider.get<HomeGroupsSource>()),
     );
