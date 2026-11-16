@@ -12,9 +12,12 @@ abstract interface class HomeDataDependencyModuleResolver {
         if (source is BoxHomeGroupsSource) await source.close();
       },
     );
+    DependencyProvider.registerLazySingleton<HomeGroupMapper>(() => const HomeGroupMapper());
     DependencyProvider.registerLazySingleton<HomeGroupsRepository>(
-      () =>
-          HomeGroupsRepositoryImpl(source: DependencyProvider.get<HomeGroupsSource>(), mapper: const HomeGroupMapper()),
+      () => HomeGroupsRepositoryImpl(
+        source: DependencyProvider.get<HomeGroupsSource>(),
+        mapper: DependencyProvider.get<HomeGroupMapper>(),
+      ),
     );
   }
 }
