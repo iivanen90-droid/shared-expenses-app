@@ -7,6 +7,7 @@ import 'package:home_feature/src/data/model/home_group_record.dart';
 abstract interface class HomeGroupsSource {
   Stream<List<HomeGroupRecord>> watchGroups();
   Future<HomeGroupRecord> insert(HomeGroupRecord group);
+  Future<HomeGroupRecord?> getGroupById(int id);
 }
 
 final class BoxHomeGroupsSource implements HomeGroupsSource {
@@ -48,6 +49,9 @@ final class BoxHomeGroupsSource implements HomeGroupsSource {
     group.id = box.put(group, mode: PutMode.insert);
     return group;
   }
+
+  @override
+  Future<HomeGroupRecord?> getGroupById(int id) async => (await _database()).box<HomeGroupRecord>().get(id);
 
   Future<void> close() async {
     final pending = _opening;
