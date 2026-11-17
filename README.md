@@ -267,8 +267,9 @@ in the [architecture](docs/architecture.md).
 
 After initialization, /splash is replaced by /home. The Home and Profile tabs retain their state
 through the typed StatefulShellRoute. Home reads the local ObjectBox group list and handles an empty list.
-New Tricount opens a modal sheet. Start New Tricount opens the group form, which confirms a successful
-local save. Join Existing Tricount remains a placeholder. Profile is blank. The UI uses the app theme and en/uk localization.
+New group opens a modal sheet. Start a new group opens the group form, which confirms a successful
+local save. The confirmation action and the Home list open the group by ID. Back returns to Home.
+Join an existing group remains a placeholder. Profile is blank. The UI uses the app theme and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:

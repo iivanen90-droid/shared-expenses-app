@@ -28,6 +28,9 @@ class _Groups implements HomeGroupsInteractor {
 
   @override
   Future<Either<GroupsStorageFailure, HomeGroup>> create(NewGroup group) => throw UnimplementedError();
+
+  @override
+  Future<Either<GroupsStorageFailure, HomeGroup?>> getGroupById(int id) => throw UnimplementedError();
 }
 
 class _TranslationsLoader extends AssetLoader {
@@ -97,7 +100,7 @@ void main() {
       await context.setLocale(const Locale('en'));
       await tester.pumpAndSettle();
       expect(find.text('You don’t have any groups yet'), findsOneWidget);
-      expect(find.text('New Tricount'), findsOneWidget);
+      expect(find.text('New group'), findsOneWidget);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
       await DependencyProvider.reset();

@@ -53,6 +53,12 @@ RouteBase get $mainShellRoute => StatefulShellRouteData.$route(
               parentNavigatorKey: GroupCreatedRoute.$parentNavigatorKey,
               factory: $GroupCreatedRoute._fromState,
             ),
+            GoRouteData.$route(
+              path: 'groups/:groupId',
+              hasOverriddenOnExit: false,
+              parentNavigatorKey: GroupDetailsRoute.$parentNavigatorKey,
+              factory: $GroupDetailsRoute._fromState,
+            ),
           ],
         ),
       ],
@@ -114,6 +120,28 @@ mixin $GroupCreatedRoute on GoRouteData {
 
   @override
   String get location => GoRouteData.$location('/home/created/${Uri.encodeComponent(_self.groupId.toString())}');
+
+  @override
+  void go(BuildContext context) => context.go(location);
+
+  @override
+  Future<T?> push<T>(BuildContext context) => context.push<T>(location);
+
+  @override
+  void pushReplacement(BuildContext context) => context.pushReplacement(location);
+
+  @override
+  void replace(BuildContext context) => context.replace(location);
+}
+
+mixin $GroupDetailsRoute on GoRouteData {
+  static GroupDetailsRoute _fromState(GoRouterState state) =>
+      GroupDetailsRoute(groupId: int.parse(state.pathParameters['groupId']!));
+
+  GroupDetailsRoute get _self => this as GroupDetailsRoute;
+
+  @override
+  String get location => GoRouteData.$location('/home/groups/${Uri.encodeComponent(_self.groupId.toString())}');
 
   @override
   void go(BuildContext context) => context.go(location);

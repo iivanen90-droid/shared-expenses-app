@@ -12,11 +12,14 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
   Access other packages through public barrels, never their `src/` directories.
 - Page → Cubit → Interactor → Repository → Source. Source/Repository/Interactor use interface + Impl.
   Use constructor injection with required named parameters and private fields. Cubits do not call repositories.
-- Cubits extend SafeCubitWrapper. Use one freezed state with a status enum. Pages create Cubits through DI.
+- Cubits extend SafeCubitWrapper. Keep each state and its status enum in a separate state file.
+  Pages create Cubits through DI and call `initialize()` when startup work is needed.
+- Give each new page its own folder within its feature. Use descriptive lookup names across layers
+  and inject record mappers through constructors.
 - Bootstrap: binding → debug semantics → await localization → await portraitUp → DI → await ApplicationInitializer → runApp.
   Only the initializer installs global error handlers; successful startup does not repeat on splash.
 - Register each feature's three DI resolvers in common after core, in data → domain → ui order.
-  Specify the dependency type in resolver lookups, for example `DependencyProvider.get<HomeGroupsRepository>()`.
+  Specify the dependency type in every `DependencyProvider.get<T>()` call, for example `DependencyProvider.get<HomeGroupsRepository>()`.
 - Routes are typed in router. Start at splash; buildPlatformPage uses SDK MaterialPage / CupertinoPage by platform.
   StatefulShellRoute already provides two tabs with independent stacks. Do not add business screens outside the task.
 - Pages call typed routes through the public router barrel in UI handlers. Do not pass navigation callbacks from route builders.
@@ -33,7 +36,8 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
 - Never edit generated files manually. Keep the shared `pubspec.lock` in Git.
   `.fvmrc` is local and ignored; Flutter version and post-clone setup are in README.
 - Write repository documentation and agent instructions in English; communicate with the user in Ukrainian.
-- Name classes and widgets for their role, for example `AddGroupSheet`. Keep product branding in localized UI text.
+- Name classes and widgets for their role, for example `AddGroupSheet`. Use group terminology for
+  group actions and statuses. Keep the product name for branding.
 
 ## Adding functionality
 
