@@ -113,7 +113,7 @@ void main() {
     }
   });
 
-  testWidgets('New group opens a modal above Home and Join remains a placeholder', (tester) async {
+  testWidgets('New group opens a modal above Home with both actions', (tester) async {
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
       final home = find.bySemanticsIdentifier('home_title');
@@ -134,11 +134,6 @@ void main() {
       expect(GoRouterConfig.homeNavigatorKey.currentState?.canPop(), isFalse);
       expect(find.bySemanticsIdentifier('tab_profile').hitTestable(), findsNothing);
 
-      await tester.tap(join);
-      await tester.pumpAndSettle();
-      expect(sheet, findsOneWidget);
-      expect(find.byType(TextField), findsNothing);
-
       await tester.tap(find.bySemanticsIdentifier('add_tricount_close'));
       await tester.pumpAndSettle();
       expect(sheet, findsNothing);
@@ -149,6 +144,65 @@ void main() {
       await tester.tap(find.bySemanticsIdentifier('tab_home'));
       await tester.pumpAndSettle();
       expect(tester.element(home), same(homeElement));
+    });
+  });
+
+  testWidgets('Join opens a localized screen and returns to the same Home without the sheet', (tester) async {
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      final home = find.bySemanticsIdentifier('home_title');
+      final homeElement = tester.element(home);
+
+      Future<void> openJoin() async {
+        await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsIdentifier('add_tricount_join'));
+        await tester.pumpAndSettle();
+        expect(find.byType(BottomSheet), findsNothing);
+        expect(find.byType(NavigationBar).hitTestable(), findsNothing);
+      }
+
+      await openJoin();
+      final linkField = find.byType(TextField);
+      expect(find.text('Приєднатися до групи'), findsOneWidget);
+      expect(find.text('Вставте посилання тут'), findsOneWidget);
+      final joinButton = find.widgetWithText(FilledButton, 'Приєднатися');
+      expect(tester.widget<FilledButton>(joinButton).onPressed, isNull);
+      await tester.enterText(linkField, '   ');
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(joinButton).onPressed, isNull);
+      await tester.enterText(linkField, 'invite text');
+      await tester.pumpAndSettle();
+      await tester.tap(joinButton);
+      await tester.pumpAndSettle();
+      expect(find.text('Приєднання буде доступне пізніше'), findsOneWidget);
+      expect(find.text('invite text'), findsOneWidget);
+
+      await tester.element(linkField).setLocale(const Locale('en'));
+      await tester.pumpAndSettle();
+      expect(find.text('Join a group'), findsOneWidget);
+      expect(find.text('Paste your link here'), findsOneWidget);
+      expect(find.widgetWithText(FilledButton, 'Join'), findsOneWidget);
+      expect(find.text('Joining will be available later'), findsOneWidget);
+
+      await tester.enterText(linkField, '');
+      await tester.pumpAndSettle();
+      expect(tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'Join')).onPressed, isNull);
+      expect(find.text('Joining will be available later'), findsNothing);
+
+      await tester.tap(find.byType(CloseButton));
+      await tester.pumpAndSettle();
+      expect(tester.element(home), same(homeElement));
+      expect(find.byType(BottomSheet), findsNothing);
+      expect(linkField, findsNothing);
+
+      await openJoin();
+      expect(find.text('invite text'), findsNothing);
+      expect(find.text('Joining will be available later'), findsNothing);
+      expect(await tester.binding.handlePopRoute(), isTrue);
+      await tester.pumpAndSettle();
+      expect(tester.element(home), same(homeElement));
+      expect(linkField, findsNothing);
     });
   });
 

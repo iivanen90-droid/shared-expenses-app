@@ -19,24 +19,32 @@ class HomePage extends StatelessWidget {
   );
 }
 
+enum _AddGroupAction { start, join }
+
 class _HomeView extends StatelessWidget {
   const _HomeView();
 
   Future<void> _openSheet(BuildContext context) async {
-    final start = await showModalBottomSheet<bool>(
+    final action = await showModalBottomSheet<_AddGroupAction>(
       context: context,
       useRootNavigator: true,
       useSafeArea: true,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (sheetContext) =>
-          AddGroupSheet(onStart: () => Navigator.of(sheetContext).pop(true), onJoin: _joinExistingGroup),
+      builder: (sheetContext) => AddGroupSheet(
+        onStart: () => Navigator.of(sheetContext).pop(_AddGroupAction.start),
+        onJoin: () => Navigator.of(sheetContext).pop(_AddGroupAction.join),
+      ),
     );
-    if (context.mounted && start == true) context.goTo(const CreateGroupRoute());
-  }
-
-  void _joinExistingGroup() {
-    // The invitation flow will be connected here when it exists.
+    if (!context.mounted) return;
+    switch (action) {
+      case _AddGroupAction.start:
+        context.goTo(const CreateGroupRoute());
+      case _AddGroupAction.join:
+        await context.pushTo<void>(const JoinGroupRoute());
+      case null:
+        return;
+    }
   }
 
   @override

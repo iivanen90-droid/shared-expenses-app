@@ -3,3 +3,4 @@ export 'home/home_page.dart';
 export 'group/group_details_page.dart';
 export 'create_group/create_group_page.dart';
 export 'group_created/group_created_page.dart';
+export 'join_group/join_group_page.dart';

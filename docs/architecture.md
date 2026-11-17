@@ -220,7 +220,8 @@ a localized message. Start a new group opens the form from the modal sheet. The 
 and its participant names in one ObjectBox record, then replaces the form with a confirmation route.
 The confirmation action and the Home list open the group placeholder by its stored ID. The group
 route replaces the confirmation and retains Home beneath it for Back.
-The [currency catalog](currency-catalog.md) is bundled offline. Join an existing group is a placeholder. Profile at /profile
+The [currency catalog](currency-catalog.md) is bundled offline. The join action opens the typed /home/join route above the tab shell.
+The join Cubit enables submission for nonblank input and shows a local notice on submit. Profile at /profile
 is a blank placeholder.
 State is not restored after process termination.
 

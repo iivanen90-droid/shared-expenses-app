@@ -41,4 +41,9 @@ abstract class LocaleKeys {
   static const groupDetailsTitle = 'groupDetailsTitle';
   static const groupMissing = 'groupMissing';
   static const groupLoadFailed = 'groupLoadFailed';
+  static const joinGroupTitle = 'joinGroupTitle';
+  static const joinGroupInstructions = 'joinGroupInstructions';
+  static const joinGroupLinkHint = 'joinGroupLinkHint';
+  static const joinGroupAction = 'joinGroupAction';
+  static const joinGroupUnavailable = 'joinGroupUnavailable';
 }

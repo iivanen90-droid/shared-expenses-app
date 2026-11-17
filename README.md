@@ -269,7 +269,8 @@ After initialization, /splash is replaced by /home. The Home and Profile tabs re
 through the typed StatefulShellRoute. Home reads the local ObjectBox group list and handles an empty list.
 New group opens a modal sheet. Start a new group opens the group form, which confirms a successful
 local save. The confirmation action and the Home list open the group by ID. Back returns to Home.
-Join an existing group remains a placeholder. Profile is blank. The UI uses the app theme and en/uk localization.
+Join an existing group opens a screen that displays a local notice when a nonblank invitation is submitted.
+Profile is blank. The UI uses the app theme and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:

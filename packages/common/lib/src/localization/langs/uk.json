@@ -36,5 +36,10 @@
   "groupGoTo": "До групи",
   "groupDetailsTitle": "Група",
   "groupMissing": "Групу не знайдено",
-  "groupLoadFailed": "Не вдалося завантажити групу"
+  "groupLoadFailed": "Не вдалося завантажити групу",
+  "joinGroupTitle": "Приєднатися до групи",
+  "joinGroupInstructions": "Попросіть учасника надіслати посилання-запрошення й вставте його нижче.",
+  "joinGroupLinkHint": "Вставте посилання тут",
+  "joinGroupAction": "Приєднатися",
+  "joinGroupUnavailable": "Приєднання буде доступне пізніше"
 }
