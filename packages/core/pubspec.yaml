@@ -12,9 +12,11 @@ dependencies:
   dio:
   objectbox:
   supabase_flutter:
+  app_links:
   flutter_secure_storage:
   shared_preferences:
 dev_dependencies:
+  http:
   flutter_test:
     sdk: flutter
   shared_preferences_platform_interface:

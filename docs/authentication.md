@@ -67,9 +67,11 @@ Android uses encrypted storage and disables application backup. iOS uses this-de
 Keychain accessibility and separate flavor URL schemes.
 
 The page waits for an actual authentication event after launching the browser. If the
-browser was dismissed, Cancel sign-in clears the local pending login through sign-out
-and permits a new attempt. Late callbacks are ignored after cancellation until a new
-attempt starts. Signing out removes the saved session before reporting success and
+browser was dismissed, Cancel sign-in stops accepting callbacks and waits for an already
+running code exchange to finish before removing its session. Its late authentication event
+is suppressed while cancellation is pending. A new attempt is available after cleanup.
+Callbacks received after cancellation are ignored until a new attempt starts.
+Signing out removes the saved session before reporting success and
 uses local sign-out scope, preserving sessions on other devices. It also works offline.
 
 SDK debug output is disabled. Failures contain only a safe kind, and Cubit state contains

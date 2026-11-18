@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_links/app_links.dart';
 import 'package:core/src/auth/auth_configuration.dart';
 import 'package:core/src/auth/auth_service.dart';
 import 'package:core/src/auth/secure_auth_storage.dart';
@@ -7,7 +8,7 @@ import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final class SupabaseAuthService implements AuthService {
-  SupabaseAuthService({required this._configuration});
+  SupabaseAuthService({required this._configuration, this._storage, this._callbackLinks});
 
   final AuthConfiguration _configuration;
   final _updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
@@ -16,8 +17,12 @@ final class SupabaseAuthService implements AuthService {
   Supabase? _supabase;
   SecureAuthStorage? _storage;
   StreamSubscription<AuthState>? _subscription;
+  final Stream<Uri>? _callbackLinks;
+  StreamSubscription<Uri>? _linkSubscription;
   Future<void>? _initialization;
   Future<void> _eventQueue = Future.value();
+  Future<void> _callbackQueue = Future.value();
+  Future<Either<AuthenticationFailure, Unit>>? _signOutOperation;
   bool _acceptCallbacks = true;
   bool _disposed = false;
 
@@ -30,9 +35,11 @@ final class SupabaseAuthService implements AuthService {
       _failure = const AuthenticationFailure(AuthenticationFailureKind.configuration);
       return;
     }
-    final storage = SecureAuthStorage(
-      namespace: 'shared-expenses:${_configuration.environment.name}:${Uri.parse(_configuration.url).host}',
-    );
+    final storage =
+        _storage ??
+        SecureAuthStorage(
+          namespace: 'shared-expenses:${_configuration.environment.name}:${Uri.parse(_configuration.url).host}',
+        );
     _storage = storage;
     try {
       await storage.accessToken();
@@ -44,7 +51,7 @@ final class SupabaseAuthService implements AuthService {
           authFlowType: AuthFlowType.pkce,
           localStorage: storage,
           pkceAsyncStorage: storage,
-          detectSessionInUriPredicate: (uri) => _acceptCallbacks && _configuration.acceptsCallback(uri),
+          detectSessionInUri: false,
         ),
       );
       await storage.pending;
@@ -55,6 +62,7 @@ final class SupabaseAuthService implements AuthService {
       _subscription = _supabase!.client.auth.onAuthStateChange.listen((_) {
         _eventQueue = _eventQueue.then((_) async {
           await storage.pending;
+          if (!_acceptCallbacks && _supabase?.client.auth.currentSession != null) return;
           if (storage.writeFailed) {
             _publishFailure(const AuthenticationFailure(AuthenticationFailureKind.storage));
             return;
@@ -64,9 +72,25 @@ final class SupabaseAuthService implements AuthService {
           _updates.add(Right(_status));
         });
       }, onError: (Object error, StackTrace stack) => _publishFailure(_mapFailure(error)));
+      _linkSubscription = (_callbackLinks ?? AppLinks().uriLinkStream).listen(
+        _handleCallback,
+        onError: (Object error, StackTrace stack) => _publishFailure(_mapFailure(error)),
+      );
     } on Object catch (error) {
       _failure = _mapFailure(error);
     }
+  }
+
+  void _handleCallback(Uri uri) {
+    if (!_acceptCallbacks || !_configuration.acceptsCallback(uri)) return;
+    _callbackQueue = _callbackQueue.then((_) async {
+      if (!_acceptCallbacks) return;
+      try {
+        await _supabase!.client.auth.getSessionFromUrl(uri);
+      } on Object catch (error) {
+        if (_acceptCallbacks) _publishFailure(_mapFailure(error));
+      }
+    });
   }
 
   AuthenticationStatus get _sessionStatus {
@@ -99,6 +123,8 @@ final class SupabaseAuthService implements AuthService {
     final supabase = _supabase;
     if (supabase == null) return const Left(AuthenticationFailure(AuthenticationFailureKind.configuration));
     try {
+      await _signOutOperation;
+      await _callbackQueue;
       _acceptCallbacks = true;
       final launched = await supabase.client.auth.signInWithOAuth(
         OAuthProvider.google,
@@ -113,11 +139,17 @@ final class SupabaseAuthService implements AuthService {
   }
 
   @override
-  Future<Either<AuthenticationFailure, Unit>> signOut() async {
+  Future<Either<AuthenticationFailure, Unit>> signOut() =>
+      _signOutOperation ??= _signOut().whenComplete(() => _signOutOperation = null);
+
+  Future<Either<AuthenticationFailure, Unit>> _signOut() async {
     final supabase = _supabase;
     if (supabase == null) return const Left(AuthenticationFailure(AuthenticationFailureKind.configuration));
     try {
       _acceptCallbacks = false;
+      // The SDK can still save an in-flight exchange after signOut. Drain it first,
+      // suppress its UI events, then clear the resulting session before success.
+      await _callbackQueue;
       // Clear the saved session before reporting success, including when offline.
       await _storage!.removePersistedSession();
       await supabase.client.auth.signOut(scope: SignOutScope.local);
@@ -135,6 +167,9 @@ final class SupabaseAuthService implements AuthService {
     if (_disposed) return;
     _disposed = true;
     await _initialization;
+    await _linkSubscription?.cancel();
+    await _callbackQueue;
+    await _signOutOperation;
     await _subscription?.cancel();
     await _eventQueue;
     await _storage?.pending;
