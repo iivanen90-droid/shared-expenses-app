@@ -50,6 +50,36 @@ void main() {
     }
   });
 
+  test('failed cancellation publishes its actual active session and permits a cleanup retry', () async {
+    final backend = _FailingSessionStorage();
+    final harness = await _AuthHarness.create(backend: backend);
+    final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
+    final subscription = harness.service.watchStatus().listen(events.add);
+    try {
+      await harness.startCallback();
+      backend.failSessionDeletes = true;
+      final cancelling = harness.service.signOut();
+      harness.response.complete(_sessionResponse());
+      final result = await cancelling;
+      await Future<void>.delayed(Duration.zero);
+      expect(result.getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
+      expect(harness.supabase.client.auth.currentSession, isNotNull);
+      expect(await harness.storage.hasAccessToken(), isTrue);
+      expect(
+        events[events.length - 2].getOrElse((_) => AuthenticationStatus.unconfigured),
+        AuthenticationStatus.signedIn,
+      );
+      expect(events.last.isLeft(), isTrue);
+      backend.failSessionDeletes = false;
+      expect((await harness.service.signOut()).isRight(), isTrue);
+      expect(harness.supabase.client.auth.currentSession, isNull);
+      expect(await harness.storage.accessToken(), isNull);
+    } finally {
+      await subscription.cancel();
+      await harness.dispose();
+    }
+  });
+
   test('a failed in-flight exchange also completes cancellation without surfacing its obsolete error', () async {
     final harness = await _AuthHarness.create();
     final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
@@ -244,6 +274,31 @@ class _AuthHarness {
 
 class _FailingSessionStorage extends FlutterSecureStorage {
   bool failSessionWrites = false;
+  bool failSessionDeletes = false;
+
+  @override
+  Future<void> delete({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (failSessionDeletes && key.endsWith(':session')) {
+      throw StateError('test-only secure delete failure');
+    }
+    await super.delete(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
 
   @override
   Future<void> write({

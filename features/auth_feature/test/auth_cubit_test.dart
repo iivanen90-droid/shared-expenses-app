@@ -92,6 +92,22 @@ void main() {
     expect(cubit.isClosed, isTrue);
   });
 
+  test('failed cancellation retains the actual session for a sign-out retry', () async {
+    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
+    await flush();
+    await cubit.signInWithGoogle();
+    interactor.signOutGate = Completer<Either<AuthenticationFailure, Unit>>();
+    final cancelling = cubit.cancelSignIn();
+    interactor.updates.add(const Right(AuthenticationStatus.signedIn));
+    await flush();
+    expect(cubit.state.status, AuthStatus.signingOut);
+    interactor.signOutGate!.complete(const Left(AuthenticationFailure(AuthenticationFailureKind.storage)));
+    await cancelling;
+    expect(cubit.state.session, AuthenticationStatus.signedIn);
+    expect(cubit.state.failure, AuthenticationFailureKind.storage);
+    expect(cubit.state.status, AuthStatus.ready);
+  });
+
   test('a signed-out event keeps the page busy until the sign-out operation finishes', () async {
     interactor.updates.add(const Right(AuthenticationStatus.signedIn));
     await flush();

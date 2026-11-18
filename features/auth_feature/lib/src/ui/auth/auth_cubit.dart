@@ -16,9 +16,12 @@ final class AuthCubit extends SafeCubitWrapper<AuthState> {
     _subscription ??= _interactor.watchStatus().listen(
       (result) {
         result.match((failure) => emit(state.copyWith(status: AuthStatus.ready, failure: failure.kind)), (session) {
-          if (state.status != AuthStatus.signingOut) {
-            emit(AuthState(status: AuthStatus.ready, session: session));
-          }
+          emit(
+            AuthState(
+              status: state.status == AuthStatus.signingOut ? AuthStatus.signingOut : AuthStatus.ready,
+              session: session,
+            ),
+          );
         });
       },
       onError: (Object _, StackTrace _) =>

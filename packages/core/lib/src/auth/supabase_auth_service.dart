@@ -169,7 +169,11 @@ final class SupabaseAuthService implements AuthService {
       if (supabase.client.auth.currentSession == null && _storage?.writeFailed == false) {
         return const Right(unit);
       }
-      return Left(_mapFailure(error));
+      final failure = _mapFailure(error);
+      _status = _sessionStatus;
+      _updates.add(Right(_status));
+      _publishFailure(failure);
+      return Left(failure);
     }
   }
 
