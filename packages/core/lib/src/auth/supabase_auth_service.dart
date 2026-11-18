@@ -109,6 +109,10 @@ final class SupabaseAuthService implements AuthService {
   }
 
   void _publishFailure(AuthenticationFailure failure) {
+    if (_supabase != null && _signOutOperation == null) {
+      _status = _sessionStatus;
+      _updates.add(Right(_status));
+    }
     _failure = failure;
     _updates.add(Left(failure));
   }

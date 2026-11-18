@@ -98,6 +98,34 @@ void main() {
     }
   });
 
+  test('an existing subscriber receives the active session when secure persistence fails', () async {
+    final backend = _FailingSessionStorage();
+    final harness = await _AuthHarness.create(backend: backend);
+    final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
+    final subscription = harness.service.watchStatus().listen(events.add);
+    try {
+      final failure = harness.service.watchStatus().firstWhere((event) => event.isLeft());
+      await harness.startCallback();
+      backend.failSessionWrites = true;
+      harness.response.complete(_sessionResponse());
+      final error = await failure;
+      expect(error.getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
+      expect(
+        events[events.length - 2].getOrElse((_) => AuthenticationStatus.unconfigured),
+        AuthenticationStatus.signedIn,
+      );
+      expect(events.last.isLeft(), isTrue);
+      expect(harness.supabase.client.auth.currentSession, isNotNull);
+      expect(await harness.storage.accessToken(), isNull);
+      backend.failSessionWrites = false;
+      expect((await harness.service.signOut()).isRight(), isTrue);
+      expect(harness.supabase.client.auth.currentSession, isNull);
+    } finally {
+      await subscription.cancel();
+      await harness.dispose();
+    }
+  });
+
   test('a completed SDK session is saved, restored by a new service and removed by sign-out', () async {
     final first = await _AuthHarness.create();
     try {
@@ -156,16 +184,18 @@ http.Response _sessionResponse() {
 }
 
 class _AuthHarness {
+  _AuthHarness({FlutterSecureStorage? backend})
+    : storage = SecureAuthStorage(namespace: 'test-auth-project', storage: backend);
   final links = StreamController<Uri>.broadcast();
   final requested = Completer<void>();
   final response = Completer<http.Response>();
-  final storage = SecureAuthStorage(namespace: 'test-auth-project');
+  final SecureAuthStorage storage;
   late final Supabase supabase;
   late final SupabaseAuthService service;
   int tokenRequests = 0;
 
-  static Future<_AuthHarness> create() async {
-    final harness = _AuthHarness();
+  static Future<_AuthHarness> create({FlutterSecureStorage? backend}) async {
+    final harness = _AuthHarness(backend: backend);
     const configuration = AuthConfiguration(
       url: 'https://example.supabase.co',
       publishableKey: 'sb_publishable_test',
@@ -209,5 +239,35 @@ class _AuthHarness {
   Future<void> dispose() async {
     await service.dispose();
     await links.close();
+  }
+}
+
+class _FailingSessionStorage extends FlutterSecureStorage {
+  bool failSessionWrites = false;
+
+  @override
+  Future<void> write({
+    required String key,
+    required String? value,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (failSessionWrites && key.endsWith(':session')) {
+      throw StateError('test-only secure storage failure');
+    }
+    await super.write(
+      key: key,
+      value: value,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
   }
 }
