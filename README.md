@@ -7,7 +7,7 @@ Groups can be created and listed locally. Expense tracking, balances, and synchr
 ## Structure
 
 Dart workspace: `mobile/`, `packages/{core,ui_kit,common,router}/`,
-`features/{splash_feature,home_feature,main_shell_feature}/`. Dependencies share one root `pubspec.lock`.
+`features/{splash_feature,home_feature,main_shell_feature,auth_feature}/`. Dependencies share one root `pubspec.lock`.
 The [current architecture](docs/architecture.md) explains packages, layers, dependencies, and adding features.
 The [Inspiro guide](docs/inspiro-architecture-guide.md) is the source reference;
 the [Tricount roadmap](docs/tricount-architecture.md) describes future product modules.
@@ -57,6 +57,7 @@ the pinned Dart 3.13.5 version satisfies this requirement.
 | `features/splash_feature/` | `splash_feature` |
 | `features/home_feature/` | `home_feature` |
 | `features/main_shell_feature/` | `main_shell_feature` |
+| `features/auth_feature/` | `auth_feature` |
 
 Each member declares `resolution: workspace` and `publish_to: 'none'`. The root `pubspec.yaml`
 constrains external dependency versions; members list the packages they need without versions.
@@ -124,7 +125,9 @@ ENVIRONMENT must match the native flavor. Dev uses a separate ID with the `.dev`
 Android productFlavors and iOS shared schemes are configured; iOS builds require macOS/Xcode.
 Install CocoaPods on macOS for the native ObjectBox plugin, which uses Flutter's
 [CocoaPods fallback](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-app-developers).
-Production signing, a backend, and store publishing are not configured.
+Production signing and store publishing are not configured.
+Optional Google sign-in uses Supabase Auth. See [authentication setup](docs/authentication.md)
+for the ignored local configuration, provider settings, session behavior, and IntelliJ launch arguments.
 
 ## Analyzer and formatting
 
@@ -270,7 +273,7 @@ through the typed StatefulShellRoute. Home reads the local ObjectBox group list 
 New group opens a modal sheet. Start a new group opens the group form, which confirms a successful
 local save. The confirmation action and the Home list open the group by ID. Back returns to Home.
 Join an existing group opens a screen that displays a local notice when a nonblank invitation is submitted.
-Profile is blank. The UI uses the app theme and en/uk localization.
+Profile opens the optional authentication screen. The UI uses the app theme and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:

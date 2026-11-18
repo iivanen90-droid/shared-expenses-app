@@ -66,7 +66,9 @@ void main() {
       expect(find.byType(LocalizationsWrapper), findsOneWidget);
     } finally {
       messenger.setMockMethodCallHandler(SystemChannels.platform, null);
-      await _disposeApp(tester);
+      await tester.pumpWidget(const SizedBox.shrink());
+      // Bootstrap creates its services in runAsync, so dispose them in that zone too.
+      await tester.runAsync(DependencyProvider.reset);
     }
   });
 
@@ -105,7 +107,8 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(LocalizationsWrapper), findsOneWidget);
         } finally {
-          await _disposeApp(tester);
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.runAsync(DependencyProvider.reset);
         }
       }
     } finally {
@@ -422,6 +425,59 @@ void main() {
     }
   });
 
+  testWidgets('Profile opens optional authentication and Back preserves local Home', (tester) async {
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('profile_account'));
+      await tester.pumpAndSettle();
+      expect(find.text('Вхід'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('auth_google'), findsNothing);
+      expect(find.text('Вхід зараз недоступний. Ви можете користуватися локальними групами.'), findsOneWidget);
+      expect(await tester.binding.handlePopRoute(), isTrue);
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('tab_home').hitTestable());
+      await tester.pumpAndSettle();
+      expect(find.text('У вас ще немає груп'), findsOneWidget);
+    });
+  });
+
+  testWidgets('Google login, cancellation, session completion and logout use the separate localized route', (
+    tester,
+  ) async {
+    final auth = _AuthService();
+    try {
+      await _withApp(tester, translations, () async {
+        await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
+        await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsIdentifier('profile_account'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.bySemanticsIdentifier('auth_google'));
+        await tester.pump();
+        expect(auth.launches, 1);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        await tester.tap(find.text('Скасувати вхід'));
+        await tester.pumpAndSettle();
+        expect(find.text('Вхід скасовано.'), findsOneWidget);
+        await tester.tap(find.bySemanticsIdentifier('auth_google'));
+        await tester.pump();
+        auth.updates.add(const Right(AuthenticationStatus.signedIn));
+        await tester.pumpAndSettle();
+        expect(find.text('Ви увійшли в обліковий запис.'), findsOneWidget);
+        await tester.element(find.bySemanticsIdentifier('auth_sign_out')).setLocale(const Locale('en'));
+        await tester.pumpAndSettle();
+        expect(find.text('You are signed in.'), findsOneWidget);
+        await tester.tap(find.bySemanticsIdentifier('auth_sign_out'));
+        await tester.pumpAndSettle();
+        expect(find.text('Continue with Google'), findsOneWidget);
+      }, authService: auth);
+    } finally {
+      await auth.updates.close();
+    }
+  });
+
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
     final initializer = _RetryInitializer();
     await _withApp(tester, translations, () async {
@@ -444,10 +500,15 @@ Future<void> _withApp(
   Future<void> Function() testBody, {
   ApplicationInitializer? initializer,
   _GroupsRepository? repository,
+  AuthService? authService,
 }) async {
   final groups = repository ?? _GroupsRepository();
   try {
     MainDependenciesModuleResolver.register(environment: EnvironmentType.dev);
+    if (authService != null) {
+      await GetIt.instance.unregister<AuthService>();
+      DependencyProvider.registerLazySingleton<AuthService>(() => authService);
+    }
     await GetIt.instance.unregister<HomeGroupsRepository>();
     DependencyProvider.registerLazySingleton<HomeGroupsRepository>(() => groups, dispose: (_) => groups.close());
     if (initializer != null) {
@@ -551,4 +612,27 @@ class _BlockingInitializer implements ApplicationInitializer {
     await release.future;
     DependencyProvider.get<StartupStatus>().markReady();
   }
+}
+
+class _AuthService implements AuthService {
+  final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
+  int launches = 0;
+
+  @override
+  Future<void> initialize() async {}
+
+  @override
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() async* {
+    yield const Right(AuthenticationStatus.signedOut);
+    yield* updates.stream;
+  }
+
+  @override
+  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {
+    launches++;
+    return const Right(unit);
+  }
+
+  @override
+  Future<Either<AuthenticationFailure, Unit>> signOut() async => const Right(unit);
 }

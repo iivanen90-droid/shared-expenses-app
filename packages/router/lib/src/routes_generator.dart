@@ -6,8 +6,20 @@ import 'package:main_shell_feature/main_shell_feature.dart';
 import 'package:router/src/go_router_config.dart';
 import 'package:router/src/route_model.dart';
 import 'package:splash_feature/splash_feature.dart';
+import 'package:auth_feature/auth_feature.dart';
 
 part 'routes_generator.g.dart';
+
+@TypedGoRoute<AuthRoute>(path: AuthRoute.path)
+@immutable
+class AuthRoute extends GoRouteData with $AuthRoute implements RouteModel {
+  const AuthRoute();
+  static const path = '/auth';
+
+  @override
+  Page<void> buildPage(BuildContext context, GoRouterState state) =>
+      buildPlatformPage(context: context, state: state, child: const AuthPage());
+}
 
 Page<void> buildPlatformPage({required BuildContext context, required GoRouterState state, required Widget child}) {
   if (Theme.of(context).platform == TargetPlatform.iOS) {
