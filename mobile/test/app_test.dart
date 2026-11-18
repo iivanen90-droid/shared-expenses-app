@@ -349,6 +349,47 @@ void main() {
     }, repository: repository);
   });
 
+  testWidgets('unconfirmed upload preserves creation and displays a localized notice and Home status', (tester) async {
+    final repository = _GroupsRepository()..remoteState = GroupRemoteState.notConfirmed;
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('home_new_tricount'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('add_tricount_start'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('group_name')), 'Offline trip');
+      await tester.tap(find.byKey(const ValueKey('group_currency')));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('currency_search')), 'USD');
+      await tester.pumpAndSettle();
+      await tester.tap(find.descendant(of: find.byType(ListTile), matching: find.text('USD')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Створити групу'));
+      await tester.pumpAndSettle();
+      expect(repository.groups, hasLength(1));
+      expect(find.text('Групу створено'), findsOneWidget);
+      expect(
+        find.text(
+          'Збережено на цьому пристрої. Запис на сервер не підтверджено; автоматичний повтор поки недоступний.',
+        ),
+        findsOneWidget,
+      );
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('До групи'));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Offline trip'), findsOneWidget);
+      expect(
+        find.text(
+          'Збережено на цьому пристрої. Запис на сервер не підтверджено; автоматичний повтор поки недоступний.',
+        ),
+        findsWidgets,
+      );
+    }, repository: repository);
+  });
+
   testWidgets('repeated submits reveal a blank participant above the viewport without saving', (tester) async {
     final repository = _GroupsRepository();
     await _withApp(tester, translations, () async {
@@ -539,6 +580,7 @@ class _GroupsRepository implements HomeGroupsRepository {
   final groups = <HomeGroup>[];
   final _updates = StreamController<Either<GroupsStorageFailure, List<HomeGroup>>>.broadcast();
   bool failNextSave = false;
+  GroupRemoteState remoteState = GroupRemoteState.localOnly;
   int attempts = 0;
 
   @override
@@ -560,6 +602,7 @@ class _GroupsRepository implements HomeGroupsRepository {
       emoji: group.emoji,
       currencyCode: group.currencyCode,
       participants: group.participants,
+      remoteState: remoteState,
     );
     groups.insert(0, saved);
     _updates.add(Right(List.of(groups)));

@@ -53,5 +53,8 @@
   "authCancelled": "Sign-in cancelled.",
   "authNotConfigured": "Sign-in is currently unavailable. You can keep using local groups.",
   "authFailed": "Unable to complete authentication. Check your connection and try again.",
-  "authStorageFailed": "Unable to save or remove your session securely. Please try again."
+  "authStorageFailed": "Unable to save or remove your session securely. Please try again.",
+  "groupLocalOnly": "Saved on this device only",
+  "groupUploaded": "Uploaded to the server",
+  "groupRemoteNotConfirmed": "Saved on this device. Upload is not confirmed; automatic retry is not available yet."
 }

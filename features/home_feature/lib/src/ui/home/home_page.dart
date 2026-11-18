@@ -145,6 +145,13 @@ class _GroupCard extends StatelessWidget {
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: ExcludeSemantics(child: Text(group.emoji, style: context.texts.heading)),
       title: Text(group.name, style: context.texts.title),
+      subtitle: Text(
+        switch (group.remoteState) {
+          GroupRemoteState.localOnly => LocaleKeys.groupLocalOnly,
+          GroupRemoteState.pending || GroupRemoteState.notConfirmed => LocaleKeys.groupRemoteNotConfirmed,
+          GroupRemoteState.uploaded => LocaleKeys.groupUploaded,
+        }.tr(context: context),
+      ),
       trailing: const Icon(Icons.chevron_right),
       onTap: () => context.goTo(GroupDetailsRoute(groupId: group.id)),
     ),

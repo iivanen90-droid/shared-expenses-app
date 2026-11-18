@@ -2,7 +2,9 @@
 
 Flutter application for Android/iOS. The implemented shell includes splash with readiness checks
 and retry after failure, a home screen, two tabs with independent stacks, and Ukrainian/English localization.
-Groups can be created and listed locally. Expense tracking, balances, and synchronization are planned.
+Groups can be created and listed locally. New signed-in groups can also be uploaded
+to Supabase after deploying the database migration. Full synchronization, expense
+tracking and balances remain planned. See [database setup and offline findings](docs/supabase-database.md).
 
 ## Structure
 

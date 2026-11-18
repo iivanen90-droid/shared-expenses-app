@@ -128,6 +128,12 @@ Add DTO/json_serializable and business modules with the first agreed scenario th
 
 ## Local database: ObjectBox
 
+Supabase online database access uses the core `RemoteDatabase` interface and the
+same client/session initialized by auth. Home retains table names, payload mapping
+and upload decisions in its feature data layer. ObjectBox remains the UI's local
+source. See [database setup and offline findings](supabase-database.md) for atomic
+initial uploads, stable UUIDs, owner-only RLS, failure states and deferred sync work.
+
 Core exports ObjectBoxDatabase. The mobile package supplies the native Flutter libraries. The
 application owns one store per database directory and opens it with the schema owner's generated
 opener. Startup does not open a database until a feature provides a schema and wires the lifecycle.

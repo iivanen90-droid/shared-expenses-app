@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:core/src/auth/auth_configuration.dart';
 import 'package:core/src/auth/auth_service.dart';
 import 'package:core/src/auth/supabase_auth_service.dart';
+import 'package:core/src/database/remote_database.dart';
+import 'package:core/src/database/supabase_database.dart';
 
 abstract interface class CoreDependenciesModuleResolver {
   static void register({required EnvironmentType environment}) {
@@ -20,6 +22,14 @@ abstract interface class CoreDependenciesModuleResolver {
       },
     );
     DependencyProvider.registerLazySingleton<StartupStatus>(StartupStatusImpl.new);
+    DependencyProvider.registerLazySingleton<RemoteDatabase>(
+      () => SupabaseDatabase(
+        client: () {
+          final service = DependencyProvider.get<AuthService>();
+          return service is SupabaseAuthService ? service.client : null;
+        },
+      ),
+    );
     DependencyProvider.registerLazySingleton<AnalyticsTrackerFactory>(
       () => AnalyticsTrackerFactoryImpl(enabled: environment.isDebug),
     );

@@ -1,5 +1,6 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:home_feature/src/domain/entity/group_currency.dart';
+import 'package:home_feature/src/domain/entity/home_group.dart';
 
 part 'create_group_state.freezed.dart';
 
@@ -19,6 +20,7 @@ abstract class CreateGroupState with _$CreateGroupState {
     @Default(false) bool showValidationErrors,
     @Default(CreateGroupStatus.idle) CreateGroupStatus status,
     int? groupId,
+    @Default(GroupRemoteState.localOnly) GroupRemoteState remoteState,
   }) = _CreateGroupState;
 
   bool get nameMissing => name.trim().isEmpty;

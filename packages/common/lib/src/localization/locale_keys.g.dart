@@ -58,4 +58,7 @@ abstract class LocaleKeys {
   static const authNotConfigured = 'authNotConfigured';
   static const authFailed = 'authFailed';
   static const authStorageFailed = 'authStorageFailed';
+  static const groupLocalOnly = 'groupLocalOnly';
+  static const groupUploaded = 'groupUploaded';
+  static const groupRemoteNotConfirmed = 'groupRemoteNotConfirmed';
 }

@@ -26,6 +26,9 @@ final class SupabaseAuthService implements AuthService {
   bool _acceptCallbacks = true;
   bool _disposed = false;
 
+  // Database access shares the initialized client and its authenticated session.
+  SupabaseClient? get client => _supabase?.client;
+
   @override
   Future<void> initialize() => _disposed ? Future.value() : _initialization ??= _initialize();
 

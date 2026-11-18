@@ -4,6 +4,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:home_feature/src/domain/entity/group_currency.dart';
+import 'package:home_feature/src/domain/entity/home_group.dart';
 import 'package:home_feature/src/ui/create_group/create_group_cubit.dart';
 import 'package:home_feature/src/ui/create_group/create_group_state.dart';
 import 'package:home_feature/src/ui/create_group/currency_picker.dart';
@@ -85,6 +86,10 @@ class _CreateGroupFormState extends State<_CreateGroupForm> {
     listener: (context, state) {
       final id = state.groupId;
       if (id != null) {
+        if (state.remoteState == GroupRemoteState.notConfirmed) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(LocaleKeys.groupRemoteNotConfirmed.tr(context: context))));
+        }
         context.goTo(GroupCreatedRoute(groupId: id));
       }
     },

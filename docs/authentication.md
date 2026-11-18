@@ -7,10 +7,12 @@ Home, the group form, and local ObjectBox groups remain available without an acc
 The Google button starts the browser OAuth flow. Supabase creates an Auth user on the
 first successful sign-in and restores the existing account on later sign-ins.
 The page displays session status and provides sign-out. It does not display personal
-profile data or associate local groups with an account.
+profile data. Existing local groups remain independent of accounts; new signed-in
+group uploads use the ownership rules in [database setup](supabase-database.md).
 
 Apple authentication is deferred by the project owner. Email/password authentication,
-server group synchronization, database tables, and account-based group access are outside this change.
+and full server group synchronization remain outside the authentication scope.
+Database tables and initial group uploads are documented in the separate database stage.
 
 ## Supabase project
 
@@ -76,8 +78,8 @@ uses local sign-out scope, preserving sessions on other devices. It also works o
 
 SDK debug output is disabled. Failures contain only a safe kind, and Cubit state contains
 no email, provider response, token, or raw exception. An authentication identity does not
-grant access to local groups or future server tables. Server synchronization will require
-explicit account ownership and RLS policies when that feature is implemented.
+change access to device-local groups. Server uploads use explicit ownership and
+RLS policies described in [database setup](supabase-database.md).
 
 ## Manual verification
 
