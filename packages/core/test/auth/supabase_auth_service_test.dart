@@ -70,6 +70,34 @@ void main() {
     }
   });
 
+  test('a new subscriber receives the active session even after an auth stream error', () async {
+    final harness = await _AuthHarness.create();
+    try {
+      final signedIn = harness.service.watchStatus().firstWhere(
+        (event) => event.getOrElse((_) => AuthenticationStatus.unconfigured) == AuthenticationStatus.signedIn,
+      );
+      await harness.startCallback();
+      harness.response.complete(_sessionResponse());
+      await signedIn;
+      harness.supabase.client.auth.currentSession!.expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
+      final failure = harness.service.watchStatus().firstWhere((event) => event.isLeft());
+      // Inject the same SDK stream event delivered by a failed background token refresh.
+      // ignore: invalid_use_of_internal_member
+      harness.supabase.client.auth.notifyException(
+        const AuthException('test-only refresh failure'),
+        StackTrace.current,
+      );
+      await failure;
+      final reopened = await harness.service.watchStatus().take(2).toList();
+      expect(reopened.first.getOrElse((_) => AuthenticationStatus.unconfigured), AuthenticationStatus.signedIn);
+      expect(reopened.last.isLeft(), isTrue);
+      expect((await harness.service.signOut()).isRight(), isTrue);
+      expect(await harness.storage.accessToken(), isNull);
+    } finally {
+      await harness.dispose();
+    }
+  });
+
   test('a completed SDK session is saved, restored by a new service and removed by sign-out', () async {
     final first = await _AuthHarness.create();
     try {

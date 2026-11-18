@@ -94,8 +94,10 @@ final class SupabaseAuthService implements AuthService {
   }
 
   AuthenticationStatus get _sessionStatus {
-    final session = _supabase?.client.auth.currentSession;
-    return session != null && !session.isExpired ? AuthenticationStatus.signedIn : AuthenticationStatus.signedOut;
+    // A saved identity must remain removable even when its token needs refresh.
+    return _supabase?.client.auth.currentSession == null
+        ? AuthenticationStatus.signedOut
+        : AuthenticationStatus.signedIn;
   }
 
   AuthenticationFailure _mapFailure(Object error) {
@@ -114,7 +116,11 @@ final class SupabaseAuthService implements AuthService {
   @override
   Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => Stream.multi((listener) {
     final subscription = _updates.stream.listen(listener.add, onDone: listener.close);
-    listener.add(_failure == null ? Right(_status) : Left(_failure!));
+    // Replay session presence before an error so a reopened page can still sign out.
+    final session = _supabase != null && _signOutOperation == null ? _sessionStatus : _status;
+    listener.add(Right(session));
+    final failure = _failure;
+    if (failure != null) listener.add(Left(failure));
     listener.onCancel = subscription.cancel;
   });
 

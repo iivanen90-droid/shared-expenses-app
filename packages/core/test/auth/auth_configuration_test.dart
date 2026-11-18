@@ -74,8 +74,8 @@ void main() {
       ),
     );
     await service.initialize();
-    final status = await service.watchStatus().first;
-    expect(status.getLeft().toNullable()?.kind, AuthenticationFailureKind.configuration);
+    final failure = await service.watchStatus().firstWhere((event) => event.isLeft());
+    expect(failure.getLeft().toNullable()?.kind, AuthenticationFailureKind.configuration);
     await service.dispose();
   });
 }
