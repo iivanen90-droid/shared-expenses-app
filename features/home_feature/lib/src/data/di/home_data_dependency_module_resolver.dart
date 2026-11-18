@@ -2,6 +2,7 @@ import 'package:core/core.dart';
 import 'package:home_feature/src/data/mapper/home_group_mapper.dart';
 import 'package:home_feature/src/data/repository/home_groups_repository_impl.dart';
 import 'package:home_feature/src/data/source/home_groups_source.dart';
+import 'package:home_feature/src/data/source/home_groups_remote_source.dart';
 import 'package:home_feature/src/domain/repository/home_groups_repository.dart';
 
 abstract interface class HomeDataDependencyModuleResolver {
@@ -13,10 +14,14 @@ abstract interface class HomeDataDependencyModuleResolver {
       },
     );
     DependencyProvider.registerLazySingleton<HomeGroupMapper>(() => const HomeGroupMapper());
+    DependencyProvider.registerLazySingleton<HomeGroupsRemoteSource>(
+      () => HomeGroupsRemoteSourceImpl(database: DependencyProvider.get<RemoteDatabase>()),
+    );
     DependencyProvider.registerLazySingleton<HomeGroupsRepository>(
       () => HomeGroupsRepositoryImpl(
         source: DependencyProvider.get<HomeGroupsSource>(),
         mapper: DependencyProvider.get<HomeGroupMapper>(),
+        remote: DependencyProvider.get<HomeGroupsRemoteSource>(),
       ),
     );
   }

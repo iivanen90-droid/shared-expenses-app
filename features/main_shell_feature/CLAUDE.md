@@ -2,7 +2,7 @@
 
 Two-tab shell without business logic. Router declares typed routes and supplies
 StatefulNavigationShell to MainShellPage, which renders it and switches branches locally.
-The shell exposes Home and Profile. Profile is a blank placeholder.
+The shell exposes Home and Profile. Profile opens the optional authentication route.
 Do not import other feature packages. Keep data/domain/ui resolvers empty
 until dependencies are agreed upon; do not invent Cubits or interactors.
 Translation keys come from common. The shell inherits the app theme.

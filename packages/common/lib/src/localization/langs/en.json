@@ -41,5 +41,20 @@
   "joinGroupInstructions": "Ask a participant for an invite link, then paste it below.",
   "joinGroupLinkHint": "Paste your link here",
   "joinGroupAction": "Join",
-  "joinGroupUnavailable": "Joining will be available later"
+  "joinGroupUnavailable": "Joining will be available later",
+  "authAccount": "Account",
+  "authTitle": "Sign in",
+  "authDescription": "Sign in or create an account with Google. You can keep using local groups without an account.",
+  "authGoogle": "Continue with Google",
+  "authSignOut": "Sign out",
+  "authSignedIn": "You are signed in.",
+  "authWaiting": "Complete sign-in in your browser. If you closed the browser, cancel here to try again.",
+  "authCancel": "Cancel sign-in",
+  "authCancelled": "Sign-in cancelled.",
+  "authNotConfigured": "Sign-in is currently unavailable. You can keep using local groups.",
+  "authFailed": "Unable to complete authentication. Check your connection and try again.",
+  "authStorageFailed": "Unable to save or remove your session securely. Please try again.",
+  "groupLocalOnly": "Saved on this device only",
+  "groupUploaded": "Uploaded to the server",
+  "groupRemoteNotConfirmed": "Saved on this device. Upload is not confirmed; automatic retry is not available yet."
 }

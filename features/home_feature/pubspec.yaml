@@ -17,6 +17,7 @@ dependencies:
   router:
   objectbox:
   objectbox_flutter_libs:
+  uuid:
 dev_dependencies:
   flutter_test:
     sdk: flutter

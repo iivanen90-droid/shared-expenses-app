@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:core/core.dart';
 import 'package:home_feature/objectbox.g.dart';
 import 'package:home_feature/src/data/model/home_group_record.dart';
+import 'package:uuid/uuid.dart';
 
 abstract interface class HomeGroupsSource {
   Stream<List<HomeGroupRecord>> watchGroups();
   Future<HomeGroupRecord> insert(HomeGroupRecord group);
   Future<HomeGroupRecord?> getGroupById(int id);
+  Future<void> updateRemoteState(HomeGroupRecord group);
 }
 
 final class BoxHomeGroupsSource implements HomeGroupsSource {
@@ -18,9 +20,29 @@ final class BoxHomeGroupsSource implements HomeGroupsSource {
   Future<ObjectBoxDatabase>? _opening;
 
   Future<ObjectBoxDatabase> _open() async {
+    ObjectBoxDatabase? opened;
     try {
-      return await _openDatabase();
+      final database = await _openDatabase();
+      opened = database;
+      // Add stable identities to existing records without uploading or claiming them.
+      final box = database.box<HomeGroupRecord>();
+      final missingIdentity = box
+          .query(HomeGroupRecord_.stableId.equals('').or(HomeGroupRecord_.stableId.isNull()))
+          .build();
+      try {
+        database.write(() {
+          for (final group in missingIdentity.find()) {
+            group.stableId = const Uuid().v4();
+            if (group.remoteState.isEmpty) group.remoteState = 'localOnly';
+            box.put(group, mode: PutMode.update);
+          }
+        });
+      } finally {
+        missingIdentity.close();
+      }
+      return database;
     } on Object {
+      opened?.close();
       _opening = null;
       rethrow;
     }
@@ -52,6 +74,11 @@ final class BoxHomeGroupsSource implements HomeGroupsSource {
 
   @override
   Future<HomeGroupRecord?> getGroupById(int id) async => (await _database()).box<HomeGroupRecord>().get(id);
+
+  @override
+  Future<void> updateRemoteState(HomeGroupRecord group) async {
+    (await _database()).box<HomeGroupRecord>().put(group, mode: PutMode.update);
+  }
 
   Future<void> close() async {
     final pending = _opening;

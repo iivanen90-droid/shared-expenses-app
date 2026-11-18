@@ -1,6 +1,8 @@
 # home_feature
 
 Home reads and creates local groups in ObjectBox through the feature repository. Rules: [CLAUDE.md](../../CLAUDE.md).
+New signed-in groups are saved locally first, then uploaded atomically through the core RemoteDatabase.
+Keep stable UUIDs and captured ownership. Never auto-upload old/anonymous groups or report an unconfirmed upload as synced.
 Data → domain → ui; public access is through `home_feature.dart` only.
 Home presents the sheet above the tab shell. Start opens a typed creation route and Join opens a typed route above the tab shell. The join Cubit controls when the notice is shown.
 Keep the ObjectBox model and generated bindings committed.
