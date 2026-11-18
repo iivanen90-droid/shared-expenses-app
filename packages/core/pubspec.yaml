@@ -11,6 +11,8 @@ dependencies:
   fpdart:
   dio:
   objectbox:
+  supabase_flutter:
+  flutter_secure_storage:
   shared_preferences:
 dev_dependencies:
   flutter_test:

@@ -13,6 +13,7 @@ dependencies:
   splash_feature:
   main_shell_feature:
   home_feature:
+  auth_feature:
   flutter_bloc:
   easy_localization:
 dev_dependencies:
