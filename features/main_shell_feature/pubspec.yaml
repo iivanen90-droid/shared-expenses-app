@@ -8,8 +8,16 @@ dependencies:
   flutter:
     sdk: flutter
   common:
+  router:
   go_router:
   easy_localization:
+  core:
+  ui_kit:
+  flutter_bloc:
+  freezed_annotation:
 dev_dependencies:
+  build_runner:
+  freezed:
+  mocktail:
   flutter_test:
     sdk: flutter

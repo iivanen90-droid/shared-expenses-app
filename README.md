@@ -7,7 +7,7 @@ Groups can be created and listed locally. Expense tracking, balances, and synchr
 ## Structure
 
 Dart workspace: `mobile/`, `packages/{core,ui_kit,common,router}/`,
-`features/{splash_feature,home_feature,main_shell_feature}/`. Dependencies share one root `pubspec.lock`.
+`features/{splash_feature,home_feature,main_shell_feature,auth_feature}/`. Dependencies share one root `pubspec.lock`.
 The [current architecture](docs/architecture.md) explains packages, layers, dependencies, and adding features.
 The [Inspiro guide](docs/inspiro-architecture-guide.md) is the source reference;
 the [Tricount roadmap](docs/tricount-architecture.md) describes future product modules.
@@ -57,6 +57,7 @@ the pinned Dart 3.13.5 version satisfies this requirement.
 | `features/splash_feature/` | `splash_feature` |
 | `features/home_feature/` | `home_feature` |
 | `features/main_shell_feature/` | `main_shell_feature` |
+| `features/auth_feature/` | `auth_feature` |
 
 Each member declares `resolution: workspace` and `publish_to: 'none'`. The root `pubspec.yaml`
 constrains external dependency versions; members list the packages they need without versions.
@@ -124,7 +125,9 @@ ENVIRONMENT must match the native flavor. Dev uses a separate ID with the `.dev`
 Android productFlavors and iOS shared schemes are configured; iOS builds require macOS/Xcode.
 Install CocoaPods on macOS for the native ObjectBox plugin, which uses Flutter's
 [CocoaPods fallback](https://docs.flutter.dev/packages-and-plugins/swift-package-manager/for-app-developers).
-Production signing, a backend, and store publishing are not configured.
+Production signing and store publishing are not configured.
+Optional Google sign-in uses Supabase Auth. See [authentication setup](docs/authentication.md)
+for the ignored local configuration, provider settings, session behavior, and IntelliJ launch arguments.
 
 ## Analyzer and formatting
 
@@ -164,7 +167,9 @@ After `WidgetsFlutterBinding.ensureInitialized()`, mobile calls
 A saved language takes precedence; otherwise, a supported system language is selected.
 English (`en`) is the fallback for unsupported languages and missing translations.
 MaterialApp receives delegates, supportedLocales, and the current `context.locale`, so
-`await context.setLocale(const Locale('uk'))` or Locale('en') updates the UI and saves the selection.
+Profile persists the choice through core LanguagePreferences / PreferencesStorage, then
+`context.setLocale` updates the UI. easy_localization's own persistence is disabled.
+Bootstrap restores the choice before runApp. See [Profile and language preferences](docs/profile.md).
 There is no language-selection screen yet.
 
 Add each new key with nonempty text to both JSON files, then run `bash tools/tr_keys_gen.sh`
@@ -257,8 +262,8 @@ Official instructions: [Codex review on GitHub](https://developers.openai.com/co
 Direct pushes, force pushes, deleting develop, and administrator bypass are prohibited.
 Agent rules are in [AGENTS.md](AGENTS.md); the development workflow is in [CLAUDE.md](CLAUDE.md).
 
-Application startup: Flutter binding → debug semantics → localization → await portraitUp →
-register core and feature DI → await ApplicationInitializer.initialize() (error handlers and startup readiness) → runApp.
+Application startup: Flutter binding → debug semantics → await portraitUp → register core and feature DI →
+restore/migrate language → localization → await ApplicationInitializer.initialize() (error handlers and startup readiness) → runApp.
 Splash retains recovery after initialization failure. New Cubits extend SafeCubitWrapper,
 which ignores emit after close. Feature registration and error-handler lifecycle are documented
 in the [architecture](docs/architecture.md).
@@ -270,7 +275,9 @@ through the typed StatefulShellRoute. Home reads the local ObjectBox group list 
 New group opens a modal sheet. Start a new group opens the group form, which confirms a successful
 local save. The confirmation action and the Home list open the group by ID. Back returns to Home.
 Join an existing group opens a screen that displays a local notice when a nonblank invitation is submitted.
-Profile is blank. The UI uses the app theme and en/uk localization.
+Profile displays current account details, language selection and logout. Guests can open
+the optional authentication screen. Successful logout clears the tab/navigation stack.
+The UI uses the app theme and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:
@@ -281,7 +288,8 @@ fvm dart run build_runner build --force-jit
 
 The manual switching/Back scenario is in the [navigation documentation](docs/architecture.md#tab-shell-and-routes).
 
-The mobile shell awaits localization and portraitUp before DI, then awaits the initializer before runApp.
+The mobile shell awaits portraitUp before DI, restores language before localization,
+then awaits the initializer before runApp.
 Only ApplicationInitializer installs global error handlers. Successful startup does not repeat on splash.
 The manual launch and local error-log checklist is in the
 [architecture](docs/architecture.md#mobile-shell-and-startup).

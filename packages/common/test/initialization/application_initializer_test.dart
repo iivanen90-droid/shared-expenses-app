@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:common/common.dart';
@@ -26,6 +27,17 @@ void main() {
     initializer?.dispose();
     FlutterError.onError = originalFlutter;
     PlatformDispatcher.instance.onError = originalPlatform;
+  });
+
+  test('startup waits for authentication initialization before marking ready', () async {
+    final auth = _StartupAuthService();
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter, authService: auth);
+    initializer = current;
+    final initializing = current.initialize();
+    expect(status.isReady, isFalse);
+    auth.complete();
+    await initializing;
+    expect(status.isReady, isTrue);
   });
 
   test('repeated initialization marks ready without duplicating error reports', () async {
@@ -130,4 +142,19 @@ final class _Reporter implements CrashReportingService {
     if (fail) throw StateError('Reporter failed');
     errors.add(_RecordedError(error, stackTrace, fatal));
   }
+}
+
+class _StartupAuthService implements AuthService {
+  @override
+  AuthenticationProfile? get currentProfile => null;
+  final _ready = Completer<void>();
+  void complete() => _ready.complete();
+  @override
+  Future<void> initialize() => _ready.future;
+  @override
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => const Stream.empty();
+  @override
+  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async => const Right(unit);
+  @override
+  Future<Either<AuthenticationFailure, Unit>> signOut() async => const Right(unit);
 }

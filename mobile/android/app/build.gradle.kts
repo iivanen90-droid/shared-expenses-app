@@ -34,8 +34,10 @@ android {
         create("dev") {
             dimension = "environment"
             applicationIdSuffix = ".dev"
+            manifestPlaceholders["authCallbackScheme"] = "sharedexpenses-dev"
         }
         create("prod") {
+            manifestPlaceholders["authCallbackScheme"] = "sharedexpenses-prod"
             dimension = "environment"
         }
     }

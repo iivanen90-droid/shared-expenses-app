@@ -67,7 +67,7 @@ void main() {
   });
 
   testWidgets('Home shows the localized empty state and keeps creation available', (tester) async {
-    SharedPreferences.setMockInitialValues({'locale': 'uk'});
+    SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
     DependencyProvider.registerFactory<HomeCubit>(
       () => HomeCubit(analytics: _Analytics(), interactor: const _Groups([])),
@@ -76,6 +76,7 @@ void main() {
       final theme = AppTheme.main();
       await tester.pumpWidget(
         LocalizationsWrapper(
+          initialLocale: const Locale('uk'),
           assetLoader: loader,
           child: Builder(
             builder: (context) => AppThemeProvider(

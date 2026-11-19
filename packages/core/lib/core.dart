@@ -8,6 +8,9 @@ export 'src/database/objectbox_database.dart';
 export 'src/analytics/analytics_tracker.dart' show AnalyticsTracker, AnalyticsTrackerFactory;
 export 'src/analytics/crash_reporting_service.dart' show CrashReportingService;
 export 'src/startup/startup_status.dart';
+export 'src/auth/auth_configuration.dart';
+export 'src/auth/auth_service.dart';
+export 'src/preferences_storage/language_preferences.dart';
 
 export 'package:fpdart/fpdart.dart' show Either, Left, Right, Unit, unit;
 

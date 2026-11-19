@@ -7,9 +7,19 @@ import 'package:core/src/di/dependency_provider.dart';
 import 'package:core/src/preferences_storage/preferences_storage.dart';
 import 'package:core/src/startup/startup_status.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:core/src/auth/auth_configuration.dart';
+import 'package:core/src/auth/auth_service.dart';
+import 'package:core/src/auth/supabase_auth_service.dart';
+import 'package:core/src/preferences_storage/language_preferences.dart';
 
 abstract interface class CoreDependenciesModuleResolver {
   static void register({required EnvironmentType environment}) {
+    DependencyProvider.registerLazySingleton<AuthService>(
+      () => SupabaseAuthService(configuration: AuthConfiguration.fromDefines(environment)),
+      dispose: (service) {
+        if (service is SupabaseAuthService) return service.dispose();
+      },
+    );
     DependencyProvider.registerLazySingleton<StartupStatus>(StartupStatusImpl.new);
     DependencyProvider.registerLazySingleton<AnalyticsTrackerFactory>(
       () => AnalyticsTrackerFactoryImpl(enabled: environment.isDebug),
@@ -26,6 +36,9 @@ abstract interface class CoreDependenciesModuleResolver {
     );
     DependencyProvider.registerLazySingleton<PreferencesStorage>(
       () => PreferencesStorageImpl(preferences: SharedPreferencesAsync()),
+    );
+    DependencyProvider.registerLazySingleton<LanguagePreferences>(
+      () => LanguagePreferencesImpl(preferences: DependencyProvider.get<PreferencesStorage>()),
     );
   }
 }

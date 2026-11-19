@@ -4,7 +4,8 @@ import 'package:core/core.dart';
 import 'package:flutter/foundation.dart';
 
 final class ApplicationInitializerImpl implements ApplicationInitializer {
-  ApplicationInitializerImpl({required this._startupStatus, required this._crashReporting});
+  ApplicationInitializerImpl({required this._startupStatus, required this._crashReporting, this._authService});
+  final AuthService? _authService;
   final StartupStatus _startupStatus;
   final CrashReportingService _crashReporting;
   FlutterExceptionHandler? _previousFlutterHandler;
@@ -15,6 +16,7 @@ final class ApplicationInitializerImpl implements ApplicationInitializer {
   @override
   Future<void> initialize() async {
     _installErrorHandlers();
+    await _authService?.initialize();
     _startupStatus.markReady();
   }
 
