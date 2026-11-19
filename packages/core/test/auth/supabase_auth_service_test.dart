@@ -14,6 +14,29 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
+  test('profile uses current SDK identity and disappears after sign-out', () async {
+    final harness = await _AuthHarness.create();
+    try {
+      expect(harness.service.currentProfile, isNull);
+      await harness.startCallback();
+      final data = jsonDecode(_sessionResponse().body) as Map<String, dynamic>;
+      final user = data['user'] as Map<String, dynamic>;
+      user['email'] = 'test@example.invalid';
+      user['user_metadata'] = {'full_name': '  Test Person  '};
+      harness.response.complete(http.Response(jsonEncode(data), 200));
+      await harness.service.watchStatus().firstWhere(
+        (result) => result.getOrElse((_) => AuthenticationStatus.unconfigured) == AuthenticationStatus.signedIn,
+      );
+      expect(harness.service.currentProfile?.name, 'Test Person');
+      expect(harness.service.currentProfile?.email, 'test@example.invalid');
+      expect(harness.service.currentProfile.toString(), isNot(contains('test@example.invalid')));
+      await harness.service.signOut();
+      expect(harness.service.currentProfile, isNull);
+    } finally {
+      await harness.dispose();
+    }
+  });
+
   test('cancel waits for an in-flight PKCE exchange and clears its late session before success', () async {
     final harness = await _AuthHarness.create();
     final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];

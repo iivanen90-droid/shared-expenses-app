@@ -39,7 +39,7 @@ void main() {
   setUp(() async {
     previousPlatform = SharedPreferencesAsyncPlatform.instance;
     SharedPreferencesAsyncPlatform.instance = InMemorySharedPreferencesAsync.empty();
-    SharedPreferences.setMockInitialValues({'locale': 'uk'});
+    SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
   });
   tearDown(() {
@@ -58,12 +58,16 @@ void main() {
           }
           return null;
         });
+        SharedPreferences.setMockInitialValues({'locale': 'uk'});
+        await SharedPreferencesAsync().setString('app.language', 'en');
         await bootstrap.run(environment: EnvironmentType.dev);
       });
       expect(orientationRequests, 1);
       expect(DependencyProvider.get<StartupStatus>().isReady, isTrue);
       await tester.pumpAndSettle();
       expect(find.byType(LocalizationsWrapper), findsOneWidget);
+      expect(tester.widget<LocalizationsWrapper>(find.byType(LocalizationsWrapper)).initialLocale, const Locale('en'));
+      expect((await SharedPreferences.getInstance()).getString('locale'), isNull);
     } finally {
       messenger.setMockMethodCallHandler(SystemChannels.platform, null);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -478,6 +482,58 @@ void main() {
     }
   });
 
+  testWidgets(
+    'Profile shows identity, applies and persists language, then clears navigation only after successful logout',
+    (tester) async {
+      final auth = _AuthService()
+        ..session = AuthenticationStatus.signedIn
+        ..profile = const AuthenticationProfile(name: 'Test Person', email: 'test@example.invalid')
+        ..failSignOut = true;
+      final groups = _GroupsRepository()
+        ..groups.add(const HomeGroup(id: 1, name: 'Local group', emoji: '🌍', currencyCode: 'UAH', participants: []));
+      try {
+        await _withApp(
+          tester,
+          translations,
+          () async {
+            await tester.pumpAndSettle();
+            await tester.tap(find.bySemanticsIdentifier('tab_profile'));
+            await tester.pumpAndSettle();
+            expect(find.text('Test Person'), findsOneWidget);
+            expect(find.text('test@example.invalid'), findsOneWidget);
+            await tester.tap(find.bySemanticsIdentifier('profile_language'));
+            await tester.pumpAndSettle();
+            await tester.tap(find.text('English').last);
+            await tester.pumpAndSettle();
+            expect(find.text('Language'), findsOneWidget);
+            expect(find.text('Home'), findsOneWidget);
+            expect(await DependencyProvider.get<PreferencesStorage>().readString(key: 'app.language'), 'en');
+            await tester.tap(find.bySemanticsIdentifier('profile_logout'));
+            await tester.pumpAndSettle();
+            expect(find.text('Unable to sign out. Please try again.'), findsOneWidget);
+            expect(find.text('Test Person'), findsOneWidget);
+            auth.failSignOut = false;
+            await tester.tap(find.bySemanticsIdentifier('profile_logout'));
+            await tester.pumpAndSettle();
+            expect(find.text('Continue with Google'), findsOneWidget);
+            expect(find.byType(NavigationBar), findsNothing);
+            expect(find.text('Test Person'), findsNothing);
+            expect(GoRouterConfig.rootNavigatorKey.currentState?.canPop(), isFalse);
+            await tester.binding.handlePopRoute();
+            await tester.pumpAndSettle();
+            expect(find.bySemanticsIdentifier('profile_page'), findsNothing);
+            expect(groups.groups.single.name, 'Local group');
+            expect(await DependencyProvider.get<PreferencesStorage>().readString(key: 'app.language'), 'en');
+          },
+          authService: auth,
+          repository: groups,
+        );
+      } finally {
+        await auth.updates.close();
+      }
+    },
+  );
+
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
     final initializer = _RetryInitializer();
     await _withApp(tester, translations, () async {
@@ -518,7 +574,7 @@ Future<void> _withApp(
     await tester.pumpWidget(
       DefaultAssetBundle(
         bundle: _TestAssetBundle(),
-        child: LocalizationsWrapper(assetLoader: translations, child: const App()),
+        child: LocalizationsWrapper(initialLocale: const Locale('uk'), assetLoader: translations, child: const App()),
       ),
     );
     await testBody();
@@ -615,6 +671,11 @@ class _BlockingInitializer implements ApplicationInitializer {
 }
 
 class _AuthService implements AuthService {
+  @override
+  AuthenticationProfile? get currentProfile => profile;
+  AuthenticationProfile? profile;
+  AuthenticationStatus session = AuthenticationStatus.signedOut;
+  bool failSignOut = false;
   final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
   int launches = 0;
 
@@ -623,7 +684,7 @@ class _AuthService implements AuthService {
 
   @override
   Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() async* {
-    yield const Right(AuthenticationStatus.signedOut);
+    yield Right(session);
     yield* updates.stream;
   }
 
@@ -634,5 +695,11 @@ class _AuthService implements AuthService {
   }
 
   @override
-  Future<Either<AuthenticationFailure, Unit>> signOut() async => const Right(unit);
+  Future<Either<AuthenticationFailure, Unit>> signOut() async {
+    if (failSignOut) return const Left(AuthenticationFailure(AuthenticationFailureKind.storage));
+    session = AuthenticationStatus.signedOut;
+    profile = null;
+    updates.add(Right(session));
+    return const Right(unit);
+  }
 }

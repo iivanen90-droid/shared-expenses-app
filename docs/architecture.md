@@ -104,8 +104,9 @@ Tests use the official in-memory async backend; shared_preferences_platform_inte
 of core and mobile with its version constrained at the root.
 
 The store is for noncritical settings, not financial records or secrets. The wrapper adds no business keys,
-logs neither keys nor values, and does not change easy_localization's internal preference store.
-There are no separate user-settings controls in the UI yet.
+logs neither keys nor values. LanguagePreferences owns the canonical language choice;
+easy_localization's old key is migrated and its own persistence is disabled.
+Profile exposes language selection. See [Profile and language preferences](profile.md).
 
 ## UI, generation, and environments
 
@@ -114,7 +115,7 @@ buildPlatformPage supplies SDK MaterialPage on Android and CupertinoPage on iOS 
 Material widgets and the shared theme. Access styles through AppThemeProvider and context extensions;
 strings use generated LocaleKeys and easy_localization. en/uk are supported: saved or supported system
 language, with English fallback for unsupported languages and missing translations.
-There is no language-selection screen yet. States use one freezed class with a status enum.
+Profile provides language selection. States use one freezed class with a status enum.
 Routes use go_router_builder; assets use flutter_gen. Commit generated files and never edit them manually.
 
 Android has dev/prod productFlavors; iOS has matching shared schemes and Debug/Profile/Release configurations.
@@ -252,8 +253,8 @@ Navigation changes must be integrated after prerequisite PRs and another check a
 
 main.dart only selects EnvironmentType and calls the asynchronous run in main_common.dart.
 Debug semantics is enabled once for the app lifetime; release builds do not make this call.
-Localization is initialized before portraitUp, and the platform orientation request must complete
-before DI registration. MainDependenciesModuleResolver.register is currently synchronous;
+The platform orientation request must complete before DI registration. Language is restored
+through PreferencesStorage before localization and the first frame. MainDependenciesModuleResolver.register is currently synchronous;
 if it becomes asynchronous, await its Future before ApplicationInitializer.
 
 run awaits the initializer before creating the App tree. Successful initialization marks StartupStatus ready;

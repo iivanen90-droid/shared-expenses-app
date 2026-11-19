@@ -145,6 +145,8 @@ final class _Reporter implements CrashReportingService {
 }
 
 class _StartupAuthService implements AuthService {
+  @override
+  AuthenticationProfile? get currentProfile => null;
   final _ready = Completer<void>();
   void complete() => _ready.complete();
   @override

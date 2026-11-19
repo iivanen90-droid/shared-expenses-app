@@ -2,12 +2,13 @@
 
 Task [Trello #31](https://trello.com/c/4kkCz6jm).
 
-Authentication is optional. Profile opens the independent typed `/auth` route.
+Authentication is optional. Guests in Profile can open the independent typed `/auth` route.
 Home, the group form, and local ObjectBox groups remain available without an account.
 The Google button starts the browser OAuth flow. Supabase creates an Auth user on the
 first successful sign-in and restores the existing account on later sign-ins.
-The page displays session status and provides sign-out. It does not display personal
-profile data or associate local groups with an account.
+The auth page displays session status and provides sign-out. The separate Profile
+tab displays current-session name/email, language selection and logout; see
+[Profile behavior and privacy](profile.md). Local groups remain device-local.
 
 Apple authentication is deferred by the project owner. Email/password authentication,
 server group synchronization, database tables, and account-based group access are outside this change.

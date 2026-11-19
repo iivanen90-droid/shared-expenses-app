@@ -27,6 +27,18 @@ final class SupabaseAuthService implements AuthService {
   bool _disposed = false;
 
   @override
+  AuthenticationProfile? get currentProfile {
+    final user = _supabase?.client.auth.currentSession?.user;
+    if (user == null) return null;
+    final metadata = user.userMetadata;
+    String? text(Object? value) => value is String && value.trim().isNotEmpty ? value.trim() : null;
+    return AuthenticationProfile(
+      name: text(metadata?['full_name']) ?? text(metadata?['name']),
+      email: text(user.email),
+    );
+  }
+
+  @override
   Future<void> initialize() => _disposed ? Future.value() : _initialization ??= _initialize();
 
   Future<void> _initialize() async {

@@ -10,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:core/src/auth/auth_configuration.dart';
 import 'package:core/src/auth/auth_service.dart';
 import 'package:core/src/auth/supabase_auth_service.dart';
+import 'package:core/src/preferences_storage/language_preferences.dart';
 
 abstract interface class CoreDependenciesModuleResolver {
   static void register({required EnvironmentType environment}) {
@@ -35,6 +36,9 @@ abstract interface class CoreDependenciesModuleResolver {
     );
     DependencyProvider.registerLazySingleton<PreferencesStorage>(
       () => PreferencesStorageImpl(preferences: SharedPreferencesAsync()),
+    );
+    DependencyProvider.registerLazySingleton<LanguagePreferences>(
+      () => LanguagePreferencesImpl(preferences: DependencyProvider.get<PreferencesStorage>()),
     );
   }
 }

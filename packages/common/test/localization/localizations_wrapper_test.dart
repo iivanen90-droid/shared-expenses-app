@@ -19,7 +19,7 @@ void main() {
     }
   });
   setUp(() async {
-    SharedPreferences.setMockInitialValues({'locale': 'uk'});
+    SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
   });
 
@@ -33,7 +33,9 @@ void main() {
 
   testWidgets('the wrapper uses package asset paths and restores Ukrainian', (tester) async {
     final loader = _TranslationsLoader(translations);
-    await tester.pumpWidget(LocalizationsWrapper(assetLoader: loader, child: const _LocalizedTestApp()));
+    await tester.pumpWidget(
+      LocalizationsWrapper(initialLocale: const Locale('uk'), assetLoader: loader, child: const _LocalizedTestApp()),
+    );
     await tester.pumpAndSettle();
     expect(find.text('Спільні витрати'), findsOneWidget);
     expect(find.text('Повторити'), findsOneWidget);
@@ -44,9 +46,13 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('switching locale rebuilds the UI and saves the selected language', (tester) async {
+  testWidgets('switching locale rebuilds the UI without a second persistence writer', (tester) async {
     await tester.pumpWidget(
-      LocalizationsWrapper(assetLoader: _TranslationsLoader(translations), child: const _LocalizedTestApp()),
+      LocalizationsWrapper(
+        initialLocale: const Locale('uk'),
+        assetLoader: _TranslationsLoader(translations),
+        child: const _LocalizedTestApp(),
+      ),
     );
     await tester.pumpAndSettle();
     final context = tester.element(find.text('Спільні витрати'));
@@ -55,16 +61,20 @@ void main() {
     expect(find.text('Shared expenses'), findsOneWidget);
     expect(find.text('Retry'), findsOneWidget);
     expect(find.text('en'), findsOneWidget);
-    expect((await SharedPreferences.getInstance()).getString('locale'), 'en');
+    expect((await SharedPreferences.getInstance()).getString('locale'), isNull);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('a saved English locale is restored on launch', (tester) async {
-    SharedPreferences.setMockInitialValues({'locale': 'en'});
+  testWidgets('an explicitly restored English locale is used on launch', (tester) async {
+    SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
     await tester.pumpWidget(
-      LocalizationsWrapper(assetLoader: _TranslationsLoader(translations), child: const _LocalizedTestApp()),
+      LocalizationsWrapper(
+        initialLocale: const Locale('en'),
+        assetLoader: _TranslationsLoader(translations),
+        child: const _LocalizedTestApp(),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Shared expenses'), findsOneWidget);
@@ -73,11 +83,15 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('an unsupported saved locale falls back to English', (tester) async {
-    SharedPreferences.setMockInitialValues({'locale': 'de'});
+  testWidgets('an unsupported launch locale falls back to English', (tester) async {
+    SharedPreferences.setMockInitialValues({});
     await EasyLocalization.ensureInitialized();
     await tester.pumpWidget(
-      LocalizationsWrapper(assetLoader: _TranslationsLoader(translations), child: const _LocalizedTestApp()),
+      LocalizationsWrapper(
+        initialLocale: const Locale('de'),
+        assetLoader: _TranslationsLoader(translations),
+        child: const _LocalizedTestApp(),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Shared expenses'), findsOneWidget);
@@ -93,7 +107,11 @@ void main() {
       'uk': Map<String, dynamic>.of(translations['uk'] ?? {})..remove(LocaleKeys.retry),
     };
     await tester.pumpWidget(
-      LocalizationsWrapper(assetLoader: _TranslationsLoader(data), child: const _LocalizedTestApp()),
+      LocalizationsWrapper(
+        initialLocale: const Locale('uk'),
+        assetLoader: _TranslationsLoader(data),
+        child: const _LocalizedTestApp(),
+      ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Спільні витрати'), findsOneWidget);

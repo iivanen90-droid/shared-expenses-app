@@ -16,7 +16,7 @@ Primary rules: [AGENTS.md](AGENTS.md). Commands: [README.md](README.md).
   Pages create Cubits through DI and call `initialize()` when startup work is needed.
 - Give each new page its own folder within its feature. Use descriptive lookup names across layers
   and inject record mappers through constructors.
-- Bootstrap: binding → debug semantics → await localization → await portraitUp → DI → await ApplicationInitializer → runApp.
+- Bootstrap: binding → debug semantics → await portraitUp → DI → restore/migrate language → await localization → await ApplicationInitializer → runApp.
   Only the initializer installs global error handlers; successful startup does not repeat on splash.
 - Register each feature's three DI resolvers in common after core, in data → domain → ui order.
   Specify the dependency type in every `DependencyProvider.get<T>()` call, for example `DependencyProvider.get<HomeGroupsRepository>()`.

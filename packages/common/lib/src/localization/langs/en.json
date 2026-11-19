@@ -53,5 +53,11 @@
   "authCancelled": "Sign-in cancelled.",
   "authNotConfigured": "Sign-in is currently unavailable. You can keep using local groups.",
   "authFailed": "Unable to complete authentication. Check your connection and try again.",
-  "authStorageFailed": "Unable to save or remove your session securely. Please try again."
+  "authStorageFailed": "Unable to save or remove your session securely. Please try again.",
+  "profileNameMissing": "Name unavailable",
+  "profileEmailMissing": "Email unavailable",
+  "profileLanguage": "Language",
+  "profileLoadFailed": "Unable to load your account details.",
+  "profileLanguageFailed": "Unable to save the language. Try again.",
+  "profileLogoutFailed": "Unable to sign out. Please try again."
 }
