@@ -265,6 +265,10 @@ in the [architecture](docs/architecture.md).
 
 ## Tab navigation
 
+Flutter splash shows a centered temporary group emblem and the localized working
+app name on the shared theme's primary background. It proceeds as soon as startup
+is ready; failure still offers retry. Native launch screens are unchanged.
+
 After initialization, /splash is replaced by /home. The Home and Profile tabs retain their state
 through the typed StatefulShellRoute. Home reads the local ObjectBox group list and handles an empty list.
 New group opens a modal sheet. Start a new group opens the group form, which confirms a successful
