@@ -215,6 +215,12 @@ The page calls goBranch directly from NavigationBar without resetting initialLoc
 
 After successful initialization, splash calls context.goTo(const HomeRoute()). go replaces the route,
 so Back at a tab root does not reopen splash. No separate native splash has been added.
+
+The Flutter splash uses the ui_kit primary background and onPrimary content colors.
+A centered group icon is a temporary emblem above the localized working app name;
+it is not a final logo. Startup failures retain the same background, visible error
+and retry action. Content scrolls on small screens with enlarged text. No minimum
+display duration, animation or extra initialization is added. Task: [Trello 34](https://trello.com/c/OgM4K0A8).
 Home at /home observes ObjectBox through its repository, interactor, and Cubit. An empty list shows
 a localized message. Start a new group opens the form from the modal sheet. The form saves the group
 and its participant names in one ObjectBox record, then replaces the form with a confirmation route.

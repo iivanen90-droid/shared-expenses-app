@@ -25,9 +25,53 @@ class _SplashView extends StatelessWidget {
       if (state.status == SplashStatus.loaded) context.goTo(const HomeRoute());
     },
     builder: (context, state) => Scaffold(
+      backgroundColor: context.colors.primary,
       body: SafeArea(
-        child: Center(child: state.status == SplashStatus.failed ? const _StartupError() : const AppLoading()),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const _SplashBrand(),
+                if (state.status == SplashStatus.failed) ...[const SizedBox(height: 32), const _StartupError()],
+              ],
+            ),
+          ),
+        ),
       ),
+    ),
+  );
+}
+
+class _SplashBrand extends StatelessWidget {
+  const _SplashBrand();
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    identifier: 'splash_brand',
+    label: LocaleKeys.appTitle.tr(context: context),
+    excludeSemantics: true,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        DecoratedBox(
+          decoration: BoxDecoration(
+            color: context.colors.onPrimary.withValues(alpha: 0.16),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Icon(Icons.groups_outlined, size: 48, color: context.colors.onPrimary),
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          LocaleKeys.appTitle.tr(context: context),
+          textAlign: TextAlign.center,
+          style: context.texts.heading.copyWith(color: context.colors.onPrimary),
+        ),
+      ],
     ),
   );
 }
@@ -38,12 +82,17 @@ class _StartupError extends StatelessWidget {
   Widget build(BuildContext context) => Column(
     mainAxisSize: MainAxisSize.min,
     children: [
-      Text(LocaleKeys.startupError.tr(context: context), style: context.texts.title),
+      Text(
+        LocaleKeys.startupError.tr(context: context),
+        textAlign: TextAlign.center,
+        style: context.texts.title.copyWith(color: context.colors.onPrimary),
+      ),
       Semantics(
         identifier: 'splash_retry',
         container: true,
         button: true,
         child: TextButton.icon(
+          style: TextButton.styleFrom(foregroundColor: context.colors.onPrimary),
           onPressed: () => context.read<SplashCubit>().load(),
           icon: Icon(context.icons.retry),
           label: Text(LocaleKeys.retry.tr(context: context)),

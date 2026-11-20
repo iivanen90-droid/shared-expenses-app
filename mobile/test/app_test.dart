@@ -75,7 +75,8 @@ void main() {
     await _withApp(tester, translations, () async {
       try {
         await tester.pump();
-        expect(find.byType(AppLoading), findsOneWidget);
+        expect(find.bySemanticsIdentifier('splash_brand'), findsOneWidget);
+        expect(find.text('Спільні витрати'), findsOneWidget);
         expect(find.byType(NavigationBar), findsNothing);
         initializer.release.complete();
         await tester.pumpAndSettle();
@@ -86,11 +87,42 @@ void main() {
         final didPop = await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
         expect(didPop, isFalse);
-        expect(find.byType(AppLoading), findsNothing);
+        expect(find.bySemanticsIdentifier('splash_brand'), findsNothing);
         expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
       } finally {
         if (!initializer.release.isCompleted) initializer.release.complete();
       }
+    }, initializer: initializer);
+  });
+
+  testWidgets('splash remains readable in both languages with large text on a small screen and supports retry', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(320, 400);
+    tester.view.devicePixelRatio = 1;
+    tester.platformDispatcher.textScaleFactorTestValue = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+    final initializer = _RetryInitializer();
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      expect(find.text('Спільні витрати'), findsOneWidget);
+      expect(find.text('Не вдалося запустити застосунок'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.element(find.bySemanticsIdentifier('splash_brand')).setLocale(const Locale('en'));
+      await tester.pumpAndSettle();
+      expect(find.text('Shared expenses'), findsOneWidget);
+      expect(find.text('Unable to start the app'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      final retry = find.bySemanticsIdentifier('splash_retry');
+      await tester.ensureVisible(retry);
+      await tester.tap(retry);
+      await tester.pumpAndSettle();
+      expect(initializer.attempts, 2);
+      expect(find.bySemanticsIdentifier('splash_brand'), findsNothing);
+      expect(find.bySemanticsIdentifier('home_title'), findsOneWidget);
+      expect(GoRouterConfig.rootNavigatorKey.currentState?.canPop(), isFalse);
     }, initializer: initializer);
   });
 
