@@ -66,9 +66,7 @@ void main() {
       expect(find.byType(LocalizationsWrapper), findsOneWidget);
     } finally {
       messenger.setMockMethodCallHandler(SystemChannels.platform, null);
-      await tester.pumpWidget(const SizedBox.shrink());
-      // Bootstrap creates its services in runAsync, so dispose them in that zone too.
-      await tester.runAsync(DependencyProvider.reset);
+      await _disposeBootstrapApp(tester);
     }
   });
 
@@ -107,8 +105,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(LocalizationsWrapper), findsOneWidget);
         } finally {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.runAsync(DependencyProvider.reset);
+          await _disposeBootstrapApp(tester);
         }
       }
     } finally {
@@ -425,13 +422,20 @@ void main() {
     }
   });
 
-  testWidgets('Profile opens optional authentication and Back preserves local Home', (tester) async {
+  testWidgets('unconfigured authentication returns to Home with the same local group', (tester) async {
+    final repository = _GroupsRepository();
+    final saved = await repository.create((
+      name: 'Test trip',
+      emoji: '💸',
+      currencyCode: 'UAH',
+      participants: ['Participant'],
+    ));
+    final group = saved.getOrElse((_) => throw StateError('Test group setup failed'));
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
-      await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('profile_account'));
-      await tester.pumpAndSettle();
+      expect(find.text(group.name), findsOneWidget);
+      final homeElement = tester.element(find.bySemanticsIdentifier('home_title'));
+      await _openAccount(tester);
       expect(find.text('Вхід'), findsOneWidget);
       expect(find.bySemanticsIdentifier('auth_google'), findsNothing);
       expect(find.text('Вхід зараз недоступний. Ви можете користуватися локальними групами.'), findsOneWidget);
@@ -439,43 +443,71 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsIdentifier('tab_home').hitTestable());
       await tester.pumpAndSettle();
-      expect(find.text('У вас ще немає груп'), findsOneWidget);
-    });
+      expect(tester.element(find.bySemanticsIdentifier('home_title')), same(homeElement));
+      expect(find.text(group.name), findsOneWidget);
+      expect(repository.groups.single, same(group));
+    }, repository: repository);
   });
 
-  testWidgets('Google login, cancellation, session completion and logout use the separate localized route', (
-    tester,
-  ) async {
+  testWidgets('Google sign-in can be cancelled and started again', (tester) async {
     final auth = _AuthService();
-    try {
-      await _withApp(tester, translations, () async {
-        await tester.pumpAndSettle();
-        await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
-        await tester.pumpAndSettle();
-        await tester.tap(find.bySemanticsIdentifier('profile_account'));
-        await tester.pumpAndSettle();
-        await tester.tap(find.bySemanticsIdentifier('auth_google'));
-        await tester.pump();
-        expect(auth.launches, 1);
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        await tester.tap(find.text('Скасувати вхід'));
-        await tester.pumpAndSettle();
-        expect(find.text('Вхід скасовано.'), findsOneWidget);
-        await tester.tap(find.bySemanticsIdentifier('auth_google'));
-        await tester.pump();
-        auth.updates.add(const Right(AuthenticationStatus.signedIn));
-        await tester.pumpAndSettle();
-        expect(find.text('Ви увійшли в обліковий запис.'), findsOneWidget);
-        await tester.element(find.bySemanticsIdentifier('auth_sign_out')).setLocale(const Locale('en'));
-        await tester.pumpAndSettle();
-        expect(find.text('You are signed in.'), findsOneWidget);
-        await tester.tap(find.bySemanticsIdentifier('auth_sign_out'));
-        await tester.pumpAndSettle();
-        expect(find.text('Continue with Google'), findsOneWidget);
-      }, authService: auth);
-    } finally {
-      await auth.updates.close();
-    }
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      expect(auth.launches, 1);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.tap(find.text('Скасувати вхід'));
+      await tester.pumpAndSettle();
+      expect(auth.signOuts, 1);
+      expect(find.text('Вхід скасовано.'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      expect(auth.launches, 2);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    }, authService: auth);
+  });
+
+  testWidgets('Google completion displays the signed-in session on the auth route', (tester) async {
+    final auth = _AuthService();
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      auth.updates.add(const Right(AuthenticationStatus.signedIn));
+      await tester.pumpAndSettle();
+      expect(find.text('Ви увійшли в обліковий запис.'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('auth_sign_out'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    }, authService: auth);
+  });
+
+  testWidgets('the signed-in auth route updates its language', (tester) async {
+    final auth = _AuthService(initialStatus: AuthenticationStatus.signedIn);
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      expect(find.text('Ви увійшли в обліковий запис.'), findsOneWidget);
+      await tester.element(find.bySemanticsIdentifier('auth_sign_out')).setLocale(const Locale('en'));
+      await tester.pumpAndSettle();
+      expect(find.text('You are signed in.'), findsOneWidget);
+      expect(find.text('Sign out'), findsOneWidget);
+    }, authService: auth);
+  });
+
+  testWidgets('sign-out calls the service once and restores the Google action', (tester) async {
+    final auth = _AuthService(initialStatus: AuthenticationStatus.signedIn);
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      await tester.tap(find.bySemanticsIdentifier('auth_sign_out'));
+      await tester.pumpAndSettle();
+      expect(auth.signOuts, 1);
+      expect(find.bySemanticsIdentifier('auth_sign_out'), findsNothing);
+      expect(find.text('Продовжити з Google'), findsOneWidget);
+    }, authService: auth);
   });
 
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
@@ -492,6 +524,23 @@ void main() {
       expect(tester.takeException(), isNull);
     }, initializer: initializer);
   });
+}
+
+Future<void> _openAccount(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
+  await tester.pumpAndSettle();
+  await tester.tap(find.bySemanticsIdentifier('profile_account'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _disposeBootstrapApp(WidgetTester tester) async {
+  try {
+    await tester.pumpWidget(const SizedBox.shrink());
+  } finally {
+    // Bootstrap creates its services in runAsync; dispose them in that zone too.
+    await tester.runAsync(DependencyProvider.reset);
+  }
 }
 
 Future<void> _withApp(
@@ -615,15 +664,18 @@ class _BlockingInitializer implements ApplicationInitializer {
 }
 
 class _AuthService implements AuthService {
+  _AuthService({this.initialStatus = AuthenticationStatus.signedOut});
+  final AuthenticationStatus initialStatus;
   final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
   int launches = 0;
+  int signOuts = 0;
 
   @override
   Future<void> initialize() async {}
 
   @override
   Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() async* {
-    yield const Right(AuthenticationStatus.signedOut);
+    yield Right(initialStatus);
     yield* updates.stream;
   }
 
@@ -634,5 +686,9 @@ class _AuthService implements AuthService {
   }
 
   @override
-  Future<Either<AuthenticationFailure, Unit>> signOut() async => const Right(unit);
+  Future<Either<AuthenticationFailure, Unit>> signOut() async {
+    signOuts++;
+    updates.add(const Right(AuthenticationStatus.signedOut));
+    return const Right(unit);
+  }
 }

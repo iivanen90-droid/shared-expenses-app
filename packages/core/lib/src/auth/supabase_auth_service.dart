@@ -42,6 +42,7 @@ final class SupabaseAuthService implements AuthService {
         );
     _storage = storage;
     try {
+      // Fail before the SDK creates its global instance if secure storage is unreadable.
       await storage.accessToken();
       _supabase = await Supabase.initialize(
         url: _configuration.url,
