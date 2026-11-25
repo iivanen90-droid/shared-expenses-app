@@ -16,7 +16,10 @@ void main() {
 
   test('unreadable storage fails before SDK initialization and a later service can start cleanly', () async {
     final backend = _FailingSessionStorage()..failSessionReads = true;
-    final storage = SecureAuthStorage(namespace: 'test-startup-storage', storage: backend);
+    final storage = SecureAuthStorage(
+      namespace: 'test-startup-storage',
+      storage: SecureStorageImpl(storage: backend),
+    );
     const configuration = AuthConfiguration(
       url: 'https://example.supabase.co',
       publishableKey: 'sb_publishable_test',
@@ -254,7 +257,10 @@ http.Response _sessionResponse() {
 
 class _AuthHarness {
   _AuthHarness({FlutterSecureStorage? backend})
-    : storage = SecureAuthStorage(namespace: 'test-auth-project', storage: backend);
+    : storage = SecureAuthStorage(
+        namespace: 'test-auth-project',
+        storage: SecureStorageImpl(storage: backend),
+      );
   final links = StreamController<Uri>.broadcast();
   final requested = Completer<void>();
   final response = Completer<http.Response>();

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:core/core.dart';
 import 'package:core/src/auth/secure_auth_storage.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -50,56 +49,27 @@ void main() {
   });
 }
 
-class _MemoryStorage extends FlutterSecureStorage {
+class _MemoryStorage implements SecureStorage {
   final values = <String, String>{};
   bool fail = false;
   Completer<void>? writeGate;
 
   @override
-  Future<String?> read({
-    required String key,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (fail) throw StateError('private-token-in-platform-error');
+  Future<String?> read(String key) async {
+    if (fail) throw StateError('test-only read failure');
     return values[key];
   }
 
   @override
-  Future<void> write({
-    required String key,
-    required String? value,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
+  Future<void> write(String key, String value) async {
     await writeGate?.future;
-    if (fail) throw StateError('private-token-in-platform-error');
-    if (value == null) {
-      values.remove(key);
-    } else {
-      values[key] = value;
-    }
+    if (fail) throw StateError('test-only write failure');
+    values[key] = value;
   }
 
   @override
-  Future<void> delete({
-    required String key,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (fail) throw StateError('private-token-in-platform-error');
+  Future<void> delete(String key) async {
+    if (fail) throw StateError('test-only delete failure');
     values.remove(key);
   }
 }
