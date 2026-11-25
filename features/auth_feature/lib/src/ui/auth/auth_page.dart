@@ -5,6 +5,7 @@ import 'package:core/core.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:router/router.dart';
 import 'package:ui_kit/ui_kit.dart';
 
 class AuthPage extends StatelessWidget {
@@ -20,22 +21,21 @@ class AuthPage extends StatelessWidget {
 class _AuthView extends StatelessWidget {
   const _AuthView();
 
-  String _messageKey(AuthState state) {
-    if (state.failure != null) {
-      return switch (state.failure!) {
-        AuthenticationFailureKind.configuration => LocaleKeys.authNotConfigured,
-        AuthenticationFailureKind.connection => LocaleKeys.authFailed,
-        AuthenticationFailureKind.cancelled => LocaleKeys.authCancelled,
-        AuthenticationFailureKind.storage => LocaleKeys.authStorageFailed,
-      };
-    }
-    if (state.status == AuthStatus.waitingForGoogle) return LocaleKeys.authWaiting;
-    return switch (state.session) {
-      AuthenticationStatus.unconfigured => LocaleKeys.authNotConfigured,
-      AuthenticationStatus.signedOut => LocaleKeys.authDescription,
-      AuthenticationStatus.signedIn => LocaleKeys.authSignedIn,
-    };
-  }
+  String _messageKey(AuthState state) => switch (state.status) {
+    AuthStatus.loading => LocaleKeys.authWaiting,
+    AuthStatus.cancelling => LocaleKeys.authCancelling,
+    AuthStatus.authenticated => LocaleKeys.authSignedIn,
+    AuthStatus.error => switch (state.failure) {
+      AuthenticationFailureKind.configuration => LocaleKeys.authNotConfigured,
+      AuthenticationFailureKind.storage => LocaleKeys.authStorageFailed,
+      _ => LocaleKeys.authFailed,
+    },
+    AuthStatus.initial => switch (state.failure) {
+      AuthenticationFailureKind.cancelled => LocaleKeys.authCancelled,
+      _ =>
+        state.session == AuthenticationStatus.unconfigured ? LocaleKeys.authNotConfigured : LocaleKeys.authDescription,
+    },
+  };
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -46,10 +46,12 @@ class _AuthView extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 480),
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
-            child: BlocBuilder<AuthCubit, AuthState>(
+            child: BlocConsumer<AuthCubit, AuthState>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status && current.status == AuthStatus.authenticated,
+              listener: (context, _) => context.goTo(const HomeRoute()),
               builder: (context, state) {
                 final cubit = context.read<AuthCubit>();
-                final busy = state.status != AuthStatus.ready;
                 return Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,27 +65,24 @@ class _AuthView extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 24),
-                    if (busy) const Center(child: CircularProgressIndicator()),
+                    if (state.isBusy) const Center(child: CircularProgressIndicator()),
                     if (state.session == AuthenticationStatus.signedOut)
                       Semantics(
                         identifier: 'auth_google',
                         child: FilledButton(
-                          onPressed: busy ? null : cubit.signInWithGoogle,
+                          onPressed: state.canSignIn ? cubit.signInWithGoogle : null,
                           child: Text(LocaleKeys.authGoogle.tr(context: context)),
                         ),
                       ),
-                    if (state.status == AuthStatus.waitingForGoogle)
+                    if (state.status == AuthStatus.loading)
                       TextButton(
                         onPressed: cubit.cancelSignIn,
                         child: Text(LocaleKeys.authCancel.tr(context: context)),
                       ),
-                    if (state.session == AuthenticationStatus.signedIn)
-                      Semantics(
-                        identifier: 'auth_sign_out',
-                        child: FilledButton(
-                          onPressed: busy ? null : cubit.signOut,
-                          child: Text(LocaleKeys.authSignOut.tr(context: context)),
-                        ),
+                    if (state.session == AuthenticationStatus.signedIn && !state.isBusy)
+                      FilledButton(
+                        onPressed: () => context.goTo(const ProfileRoute()),
+                        child: Text(LocaleKeys.authAccount.tr(context: context)),
                       ),
                   ],
                 );

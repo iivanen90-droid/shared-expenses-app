@@ -16,8 +16,8 @@ Each member uses `resolution: workspace`, `publish_to: 'none'`, and its own `lib
 | `packages/common/` | DI composition, ApplicationInitializer, SafeCubitWrapper, Ukrainian/English localization |
 | `packages/router/` | Typed splash/tab routes, separate Navigators, navigation extensions |
 | `features/splash_feature/` | Readiness checks, loading/loaded/failed, retry after failure, transition to home |
-| `features/main_shell_feature/` | Home/Profile tab shell, optional account entry, data/domain/ui resolvers |
-| `features/auth_feature/` | Independent Google authentication page, session status, and sign-out |
+| `features/main_shell_feature/` | Home/Profile tab shell, optional account entry and sign-out, data/domain/ui resolvers |
+| `features/auth_feature/` | Independent Google sign-in page, final attempt result, and cancellation |
 | `features/home_feature/` | Existing home screen, state, and opened event; no financial features |
 | `envs/` | Safe dev/prod examples; private configurations are ignored by Git |
 | `tools/` | Workspace commands, codegen, localization, formatting, analysis, and tests |

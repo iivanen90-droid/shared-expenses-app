@@ -1,7 +1,9 @@
 # Authentication feature
 
-Google OAuth is optional. The independent authentication page is opened from Profile.
-The page calls its Cubit, interactor, repository, and the core AuthService in that order.
-The core wrapper owns Supabase, secure session persistence, and callback processing.
-Cubit state contains status and safe failure kinds, without tokens or personal data.
-Apple sign-in is deferred by the project owner. Local groups remain available without signing in.
+Google OAuth is optional. Profile opens the independent authentication page.
+Cubit awaits a single final sign-in result; Interactor owns the temporary attempt subscription.
+Core owns Supabase callback processing and secure persistence; no SDK details in the feature.
+States are initial/loading/cancelling/error/authenticated. Never equate browser launch with sign-in.
+Closing a pending page cancels its attempt. Normal sign-out belongs to Profile.
+Preserve the actual session on storage failure, including the Account recovery action.
+Apple and additional providers are deferred. Local groups remain usable without authentication.

@@ -56,5 +56,6 @@
   "authStorageFailed": "Unable to save or remove your session securely. Please try again.",
   "groupLocalOnly": "Saved on this device only",
   "groupUploaded": "Uploaded to the server",
-  "groupRemoteNotConfirmed": "Saved on this device. Upload is not confirmed; automatic retry is not available yet."
+  "groupRemoteNotConfirmed": "Saved on this device. Upload is not confirmed; automatic retry is not available yet.",
+  "authCancelling": "Cancelling sign-in…"
 }

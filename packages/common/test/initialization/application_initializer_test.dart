@@ -41,7 +41,11 @@ void main() {
   });
 
   test('repeated initialization marks ready without duplicating error reports', () async {
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await Future.wait([current.initialize(), current.initialize()]);
     await current.initialize();
@@ -53,7 +57,11 @@ void main() {
   test('Flutter errors preserve the original error and stack and chain the previous handler', () async {
     var forwarded = false;
     FlutterError.onError = (_) => forwarded = true;
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     final error = StateError('Framework error');
@@ -66,7 +74,11 @@ void main() {
   });
 
   test('unhandled root-isolate errors are reported as fatal and marked handled', () async {
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     final error = StateError('Async error');
@@ -83,7 +95,11 @@ void main() {
       forwarded = true;
       return false;
     };
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     expect(PlatformDispatcher.instance.onError?.call(StateError('Error'), StackTrace.empty), isFalse);
@@ -93,7 +109,11 @@ void main() {
 
   test('reporter failures do not recursively throw from the platform handler', () async {
     reporter.fail = true;
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     expect(PlatformDispatcher.instance.onError?.call(StateError('Error'), StackTrace.empty), isFalse);
@@ -114,7 +134,11 @@ void main() {
   });
 
   test('cleanup does not overwrite a handler installed later by another owner', () async {
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     void laterFlutter(FlutterErrorDetails details) {}
@@ -145,12 +169,14 @@ final class _Reporter implements CrashReportingService {
 }
 
 class _StartupAuthService implements AuthService {
+  @override
+  AuthenticationSnapshot get snapshot => (session: AuthenticationStatus.unconfigured, failure: null);
   final _ready = Completer<void>();
   void complete() => _ready.complete();
   @override
   Future<void> initialize() => _ready.future;
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => const Stream.empty();
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus({bool replay = true}) => const Stream.empty();
   @override
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async => const Right(unit);
   @override

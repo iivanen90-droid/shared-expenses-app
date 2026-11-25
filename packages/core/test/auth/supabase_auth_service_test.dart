@@ -14,6 +14,48 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   setUp(() => FlutterSecureStorage.setMockInitialValues({}));
 
+  test('unreadable storage fails before SDK initialization and a later service can start cleanly', () async {
+    final backend = _FailingSessionStorage()..failSessionReads = true;
+    final storage = SecureAuthStorage(
+      namespace: 'test-startup-storage',
+      storage: SecureStorageImpl(storage: backend),
+    );
+    const configuration = AuthConfiguration(
+      url: 'https://example.supabase.co',
+      publishableKey: 'sb_publishable_test',
+      environment: EnvironmentType.dev,
+    );
+    final service = SupabaseAuthService(
+      configuration: configuration,
+      storage: storage,
+      callbackLinks: const Stream.empty(),
+    );
+    try {
+      await service.initialize();
+      final events = await service.watchStatus().take(2).toList();
+      expect(events.first.getOrElse((_) => throw StateError('Expected status')), AuthenticationStatus.unconfigured);
+      expect(events.last.getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
+      // Failed initialization must not leave a global SDK instance behind.
+      expect(() => Supabase.instance, throwsAssertionError);
+    } finally {
+      await service.dispose();
+    }
+
+    backend.failSessionReads = false;
+    final recovered = SupabaseAuthService(
+      configuration: configuration,
+      storage: storage,
+      callbackLinks: const Stream.empty(),
+    );
+    try {
+      await recovered.initialize();
+      final status = await recovered.watchStatus().first;
+      expect(status.getOrElse((_) => throw StateError('Unexpected failure')), AuthenticationStatus.signedOut);
+    } finally {
+      await recovered.dispose();
+    }
+  });
+
   test('cancel waits for an in-flight PKCE exchange and clears its late session before success', () async {
     final harness = await _AuthHarness.create();
     final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
@@ -215,7 +257,10 @@ http.Response _sessionResponse() {
 
 class _AuthHarness {
   _AuthHarness({FlutterSecureStorage? backend})
-    : storage = SecureAuthStorage(namespace: 'test-auth-project', storage: backend);
+    : storage = SecureAuthStorage(
+        namespace: 'test-auth-project',
+        storage: SecureStorageImpl(storage: backend),
+      );
   final links = StreamController<Uri>.broadcast();
   final requested = Completer<void>();
   final response = Completer<http.Response>();
@@ -273,6 +318,32 @@ class _AuthHarness {
 }
 
 class _FailingSessionStorage extends FlutterSecureStorage {
+  bool failSessionReads = false;
+
+  @override
+  Future<String?> read({
+    required String key,
+    AppleOptions? iOptions,
+    AndroidOptions? aOptions,
+    LinuxOptions? lOptions,
+    WebOptions? webOptions,
+    AppleOptions? mOptions,
+    WindowsOptions? wOptions,
+  }) async {
+    if (failSessionReads && key.endsWith(':session')) {
+      throw StateError('test-only secure read failure');
+    }
+    return super.read(
+      key: key,
+      iOptions: iOptions,
+      aOptions: aOptions,
+      lOptions: lOptions,
+      webOptions: webOptions,
+      mOptions: mOptions,
+      wOptions: wOptions,
+    );
+  }
+
   bool failSessionWrites = false;
   bool failSessionDeletes = false;
 

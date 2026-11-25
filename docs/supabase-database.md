@@ -75,7 +75,10 @@ owner-only. Local account isolation is a separate product/security decision.
 
 ## Server deployment
 
-Requires the auth PR first. Apply
+This branch includes the current authentication implementation from PR #28 and
+uses its single initialized client. PR #29 must be merged after #28, but its
+integrated branch can be tested against the development project before either PR
+is merged. Apply
 `supabase/migrations/20261118140000_expense_groups.sql` once to the **development**
 project using Supabase SQL Editor or an authorized migration runner. It creates
 new tables, indexes, constraints, owner-only RLS policies and an invoker RPC.

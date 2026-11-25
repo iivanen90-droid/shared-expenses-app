@@ -4,7 +4,7 @@ import 'package:auth_feature/src/domain/repository/auth_repository.dart';
 
 abstract interface class AuthDomainDependencyModuleResolver {
   static void register() {
-    DependencyProvider.registerLazySingleton<AuthInteractor>(
+    DependencyProvider.registerFactory<AuthInteractor>(
       () => AuthInteractorImpl(repository: DependencyProvider.get<AuthRepository>()),
     );
   }

@@ -19,3 +19,5 @@ export 'src/api_client/dio_client.dart';
 export 'src/api_client/dio_client_configuration.dart';
 
 export 'package:dio/dio.dart' show CancelToken, Interceptor, InterceptorsWrapper;
+
+export 'src/secure_storage/secure_storage.dart';

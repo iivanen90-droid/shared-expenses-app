@@ -66,9 +66,7 @@ void main() {
       expect(find.byType(LocalizationsWrapper), findsOneWidget);
     } finally {
       messenger.setMockMethodCallHandler(SystemChannels.platform, null);
-      await tester.pumpWidget(const SizedBox.shrink());
-      // Bootstrap creates its services in runAsync, so dispose them in that zone too.
-      await tester.runAsync(DependencyProvider.reset);
+      await _disposeBootstrapApp(tester);
     }
   });
 
@@ -107,8 +105,7 @@ void main() {
           await tester.pumpAndSettle();
           expect(find.byType(LocalizationsWrapper), findsOneWidget);
         } finally {
-          await tester.pumpWidget(const SizedBox.shrink());
-          await tester.runAsync(DependencyProvider.reset);
+          await _disposeBootstrapApp(tester);
         }
       }
     } finally {
@@ -466,13 +463,20 @@ void main() {
     }
   });
 
-  testWidgets('Profile opens optional authentication and Back preserves local Home', (tester) async {
+  testWidgets('unconfigured authentication returns to Home with the same local group', (tester) async {
+    final repository = _GroupsRepository();
+    final saved = await repository.create((
+      name: 'Test trip',
+      emoji: '💸',
+      currencyCode: 'UAH',
+      participants: ['Participant'],
+    ));
+    final group = saved.getOrElse((_) => throw StateError('Test group setup failed'));
     await _withApp(tester, translations, () async {
       await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
-      await tester.pumpAndSettle();
-      await tester.tap(find.bySemanticsIdentifier('profile_account'));
-      await tester.pumpAndSettle();
+      expect(find.text(group.name), findsOneWidget);
+      final homeElement = tester.element(find.bySemanticsIdentifier('home_title'));
+      await _openAccount(tester);
       expect(find.text('Вхід'), findsOneWidget);
       expect(find.bySemanticsIdentifier('auth_google'), findsNothing);
       expect(find.text('Вхід зараз недоступний. Ви можете користуватися локальними групами.'), findsOneWidget);
@@ -480,43 +484,129 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.bySemanticsIdentifier('tab_home').hitTestable());
       await tester.pumpAndSettle();
-      expect(find.text('У вас ще немає груп'), findsOneWidget);
-    });
+      expect(tester.element(find.bySemanticsIdentifier('home_title')), same(homeElement));
+      expect(find.text(group.name), findsOneWidget);
+      expect(repository.groups.single, same(group));
+    }, repository: repository);
   });
 
-  testWidgets('Google login, cancellation, session completion and logout use the separate localized route', (
-    tester,
-  ) async {
+  testWidgets('Google sign-in can be cancelled and started again', (tester) async {
     final auth = _AuthService();
-    try {
-      await _withApp(tester, translations, () async {
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      expect(auth.launches, 1);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      await tester.tap(find.text('Скасувати вхід'));
+      await tester.pumpAndSettle();
+      expect(auth.signOuts, 1);
+      expect(find.text('Вхід скасовано.'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      expect(auth.launches, 2);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    }, authService: auth);
+  });
+
+  testWidgets('Google completion returns to Home and Profile owns localized sign-out', (tester) async {
+    final auth = _AuthService();
+    addTearDown(auth.updates.close);
+    final repository = _GroupsRepository();
+    await repository.create((name: 'Saved trip', emoji: '💸', currencyCode: 'UAH', participants: ['Participant']));
+    await _withApp(
+      tester,
+      translations,
+      () async {
+        await _openAccount(tester);
+        await tester.tap(find.bySemanticsIdentifier('auth_google'));
+        await tester.pump();
+        auth.emitSession(AuthenticationStatus.signedIn);
         await tester.pumpAndSettle();
+        expect(find.text('Saved trip'), findsOneWidget);
+        expect(find.bySemanticsIdentifier('auth_google'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
         await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
         await tester.pumpAndSettle();
-        await tester.tap(find.bySemanticsIdentifier('profile_account'));
+        expect(find.text('Вийти'), findsOneWidget);
+        await tester.element(find.bySemanticsIdentifier('profile_sign_out')).setLocale(const Locale('en'));
         await tester.pumpAndSettle();
-        await tester.tap(find.bySemanticsIdentifier('auth_google'));
-        await tester.pump();
-        expect(auth.launches, 1);
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
-        await tester.tap(find.text('Скасувати вхід'));
+        expect(find.text('Sign out'), findsOneWidget);
+        await tester.tap(find.bySemanticsIdentifier('profile_sign_out'));
         await tester.pumpAndSettle();
-        expect(find.text('Вхід скасовано.'), findsOneWidget);
-        await tester.tap(find.bySemanticsIdentifier('auth_google'));
-        await tester.pump();
-        auth.updates.add(const Right(AuthenticationStatus.signedIn));
-        await tester.pumpAndSettle();
-        expect(find.text('Ви увійшли в обліковий запис.'), findsOneWidget);
-        await tester.element(find.bySemanticsIdentifier('auth_sign_out')).setLocale(const Locale('en'));
-        await tester.pumpAndSettle();
-        expect(find.text('You are signed in.'), findsOneWidget);
-        await tester.tap(find.bySemanticsIdentifier('auth_sign_out'));
-        await tester.pumpAndSettle();
+        expect(auth.signOuts, 1);
         expect(find.text('Continue with Google'), findsOneWidget);
-      }, authService: auth);
-    } finally {
-      await auth.updates.close();
-    }
+        expect(await tester.binding.handlePopRoute(), isFalse);
+        await tester.pumpAndSettle();
+        expect(repository.groups.single.name, 'Saved trip');
+      },
+      authService: auth,
+      repository: repository,
+    );
+  });
+
+  testWidgets('storage failure keeps the active account recoverable from Profile', (tester) async {
+    final auth = _AuthService();
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      auth.emitSession(
+        AuthenticationStatus.signedIn,
+        failure: const AuthenticationFailure(AuthenticationFailureKind.storage),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Не вдалося безпечно зберегти або видалити сесію. Спробуйте ще раз.'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('auth_google'), findsNothing);
+      await tester.tap(find.text('Обліковий запис'));
+      await tester.pumpAndSettle();
+      expect(find.bySemanticsIdentifier('profile_sign_out'), findsOneWidget);
+      await tester.tap(find.bySemanticsIdentifier('profile_sign_out'));
+      await tester.pumpAndSettle();
+      expect(find.text('Продовжити з Google'), findsOneWidget);
+    }, authService: auth);
+  });
+
+  testWidgets('failed Profile logout stays retryable and does not navigate early', (tester) async {
+    final auth = _AuthService(initialStatus: AuthenticationStatus.signedIn)..failSignOut = true;
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('profile_sign_out'));
+      await tester.pumpAndSettle();
+      expect(find.text('Не вдалося безпечно зберегти або видалити сесію. Спробуйте ще раз.'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('profile_sign_out'), findsOneWidget);
+      expect(find.bySemanticsIdentifier('auth_google'), findsNothing);
+      auth.failSignOut = false;
+      await tester.tap(find.bySemanticsIdentifier('profile_sign_out'));
+      await tester.pumpAndSettle();
+      expect(auth.signOuts, 2);
+      expect(find.text('Продовжити з Google'), findsOneWidget);
+    }, authService: auth);
+  });
+
+  testWidgets('closing a pending auth page cancels its attempt and permits reopening', (tester) async {
+    final auth = _AuthService();
+    addTearDown(auth.updates.close);
+    await _withApp(tester, translations, () async {
+      await _openAccount(tester);
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      expect(await tester.binding.handlePopRoute(), isTrue);
+      await tester.pumpAndSettle();
+      expect(auth.signOuts, 1);
+      await tester.tap(find.bySemanticsIdentifier('profile_account'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.bySemanticsIdentifier('auth_google'));
+      await tester.pump();
+      expect(auth.launches, 2);
+      await tester.tap(find.text('Скасувати вхід'));
+      await tester.pumpAndSettle();
+    }, authService: auth);
   });
 
   testWidgets('startup failure offers a semantic retry button and recovers', (tester) async {
@@ -533,6 +623,23 @@ void main() {
       expect(tester.takeException(), isNull);
     }, initializer: initializer);
   });
+}
+
+Future<void> _openAccount(WidgetTester tester) async {
+  await tester.pumpAndSettle();
+  await tester.tap(find.bySemanticsIdentifier('tab_profile').hitTestable());
+  await tester.pumpAndSettle();
+  await tester.tap(find.bySemanticsIdentifier('profile_account'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _disposeBootstrapApp(WidgetTester tester) async {
+  try {
+    await tester.pumpWidget(const SizedBox.shrink());
+  } finally {
+    // Bootstrap creates its services in runAsync; dispose them in that zone too.
+    await tester.runAsync(DependencyProvider.reset);
+  }
 }
 
 Future<void> _withApp(
@@ -658,24 +765,55 @@ class _BlockingInitializer implements ApplicationInitializer {
 }
 
 class _AuthService implements AuthService {
+  _AuthService({this.initialStatus = AuthenticationStatus.signedOut});
+  final AuthenticationStatus initialStatus;
+  late AuthenticationStatus _session = initialStatus;
+  AuthenticationFailure? _failure;
+  @override
+  AuthenticationSnapshot get snapshot => (session: _session, failure: _failure);
   final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
   int launches = 0;
+  int signOuts = 0;
 
   @override
   Future<void> initialize() async {}
 
+  void emitSession(AuthenticationStatus session, {AuthenticationFailure? failure}) {
+    _session = session;
+    _failure = failure;
+    updates.add(Right(session));
+    if (failure != null) updates.add(Left(failure));
+  }
+
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() async* {
-    yield const Right(AuthenticationStatus.signedOut);
-    yield* updates.stream;
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus({bool replay = true}) {
+    if (!replay) return updates.stream;
+    return Stream.multi((listener) {
+      final subscription = updates.stream.listen(listener.add, onDone: listener.close);
+      listener.add(Right(_session));
+      if (_failure case final failure?) listener.add(Left(failure));
+      listener.onCancel = subscription.cancel;
+    });
   }
 
   @override
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {
     launches++;
+    _failure = null;
     return const Right(unit);
   }
 
+  bool failSignOut = false;
   @override
-  Future<Either<AuthenticationFailure, Unit>> signOut() async => const Right(unit);
+  Future<Either<AuthenticationFailure, Unit>> signOut() async {
+    signOuts++;
+    if (failSignOut) {
+      const failure = AuthenticationFailure(AuthenticationFailureKind.storage);
+      _failure = failure;
+      updates.add(const Left(failure));
+      return const Left(failure);
+    }
+    emitSession(AuthenticationStatus.signedOut);
+    return const Right(unit);
+  }
 }

@@ -1,18 +1,13 @@
 import 'package:core/src/auth/auth_service.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:core/src/secure_storage/secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 /// Serializes writes so a token refresh cannot restore a session after sign-out.
 final class SecureAuthStorage extends LocalStorage implements GotrueAsyncStorage {
-  SecureAuthStorage({required this._namespace, FlutterSecureStorage? storage})
-    : _storage =
-          storage ??
-          const FlutterSecureStorage(
-            iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock_this_device),
-          );
+  SecureAuthStorage({required this._namespace, SecureStorage? storage}) : _storage = storage ?? SecureStorageImpl();
 
   final String _namespace;
-  final FlutterSecureStorage _storage;
+  final SecureStorage _storage;
   Future<void> _pending = Future.value();
   final _failedKeys = <String>{};
 
@@ -54,7 +49,7 @@ final class SecureAuthStorage extends LocalStorage implements GotrueAsyncStorage
   Future<String?> getItem({required String key}) async {
     await _pending;
     try {
-      return await _storage.read(key: _key(key));
+      return await _storage.read(_key(key));
     } on Object {
       throw const AuthenticationFailure(AuthenticationFailureKind.storage);
     }
@@ -62,8 +57,8 @@ final class SecureAuthStorage extends LocalStorage implements GotrueAsyncStorage
 
   @override
   Future<void> setItem({required String key, required String value}) =>
-      _write(key, () => _storage.write(key: _key(key), value: value));
+      _write(key, () => _storage.write(_key(key), value));
 
   @override
-  Future<void> removeItem({required String key}) => _write(key, () => _storage.delete(key: _key(key)));
+  Future<void> removeItem({required String key}) => _write(key, () => _storage.delete(_key(key)));
 }

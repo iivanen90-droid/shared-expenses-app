@@ -61,4 +61,5 @@ abstract class LocaleKeys {
   static const groupLocalOnly = 'groupLocalOnly';
   static const groupUploaded = 'groupUploaded';
   static const groupRemoteNotConfirmed = 'groupRemoteNotConfirmed';
+  static const authCancelling = 'authCancelling';
 }

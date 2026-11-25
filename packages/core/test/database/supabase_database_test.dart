@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:core/core.dart';
 import 'package:core/src/database/supabase_database.dart';
@@ -12,8 +14,10 @@ void main() {
   late SupabaseDatabase database;
   late List<http.Request> requests;
   late http.Response response;
+  Object? transportFailure;
   setUp(() async {
     requests = [];
+    transportFailure = null;
     response = http.Response('[{"id":"row-1"}]', 200, headers: {'content-type': 'application/json'});
     client = SupabaseClient(
       'https://example.supabase.co',
@@ -21,6 +25,8 @@ void main() {
       authOptions: const AuthClientOptions(autoRefreshToken: false),
       httpClient: MockClient((request) async {
         requests.add(request);
+        final failure = transportFailure;
+        if (failure != null) throw failure;
         return http.Response.bytes(
           response.bodyBytes,
           response.statusCode,
@@ -122,6 +128,19 @@ void main() {
     );
     expect(requests, isEmpty);
   });
+
+  for (final error in <Object>[
+    const SocketException('test connection lost'),
+    TimeoutException('test acknowledgement lost'),
+  ]) {
+    test('transport failure ${error.runtimeType} is safe and never retries a write', () async {
+      transportFailure = error;
+      final result = await database.call(function: 'create_record', parameters: {'p_id': 'stable-id'});
+      final failure = result.swap().getOrElse((_) => throw StateError('Expected failure'));
+      expect(failure.kind, DatabaseFailureKind.connection);
+      expect(requests, hasLength(1));
+    });
+  }
 
   test('server rejection returns a safe failure without echoing private messages or retrying a write', () async {
     response = http.Response(

@@ -207,8 +207,8 @@ return $default(_that.status,_that.session,_that.failure);case _:
 /// @nodoc
 
 
-class _AuthState implements AuthState {
-  const _AuthState({this.status = AuthStatus.loading, this.session = AuthenticationStatus.unconfigured, this.failure});
+class _AuthState extends AuthState {
+  const _AuthState({this.status = AuthStatus.initial, this.session = AuthenticationStatus.unconfigured, this.failure}): super._();
 
 
 @override@JsonKey() final  AuthStatus status;
