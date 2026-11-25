@@ -58,4 +58,5 @@ abstract class LocaleKeys {
   static const authNotConfigured = 'authNotConfigured';
   static const authFailed = 'authFailed';
   static const authStorageFailed = 'authStorageFailed';
+  static const authCancelling = 'authCancelling';
 }

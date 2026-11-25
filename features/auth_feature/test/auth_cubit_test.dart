@@ -6,143 +6,94 @@ import 'package:auth_feature/src/ui/auth/auth_state.dart';
 import 'package:core/core.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-Future<void> flush() => Future<void>.delayed(Duration.zero);
-
 void main() {
   late _Interactor interactor;
   late AuthCubit cubit;
-
   setUp(() {
     interactor = _Interactor();
     cubit = AuthCubit(interactor: interactor)..initialize();
   });
-  tearDown(() async {
-    await cubit.close();
-    await interactor.updates.close();
-  });
+  tearDown(() => cubit.close());
 
-  test('restores a signed-in session and reflects remote sign-out', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedIn));
-    await flush();
-    expect(cubit.state.session, AuthenticationStatus.signedIn);
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    expect(cubit.state.session, AuthenticationStatus.signedOut);
+  test('reads the initial session without a screen subscription', () {
+    expect(cubit.state.status, AuthStatus.initial);
+    expect(cubit.state.canSignIn, isTrue);
+    interactor.current = (session: AuthenticationStatus.signedIn, failure: null);
+    cubit.initialize();
+    expect(cubit.state.status, AuthStatus.authenticated);
+    expect(cubit.state.canSignIn, isFalse);
   });
-
-  test('suppresses duplicate launches and waits for the actual authentication event', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    interactor.launch = Completer<Either<AuthenticationFailure, Unit>>();
-    final launch = cubit.signInWithGoogle();
+  test('loading blocks duplicate attempts until the final result', () async {
+    final operation = cubit.signInWithGoogle();
     await cubit.signInWithGoogle();
     expect(interactor.launches, 1);
-    interactor.launch!.complete(const Right(unit));
-    await launch;
-    expect(cubit.state.status, AuthStatus.waitingForGoogle);
-    interactor.updates.add(const Right(AuthenticationStatus.signedIn));
-    await flush();
-    expect(cubit.state.status, AuthStatus.ready);
-    expect(cubit.state.session, AuthenticationStatus.signedIn);
+    expect(cubit.state.status, AuthStatus.loading);
+    interactor.current = (session: AuthenticationStatus.signedIn, failure: null);
+    interactor.result.complete(const Right(unit));
+    await operation;
+    expect(cubit.state.status, AuthStatus.authenticated);
   });
-
-  test('cancel clears the pending login and allows another attempt', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    await cubit.signInWithGoogle();
+  test('a failure has an explicit error state and allows retry', () async {
+    final operation = cubit.signInWithGoogle();
+    interactor.result.complete(const Left(AuthenticationFailure(AuthenticationFailureKind.connection)));
+    await operation;
+    expect(cubit.state.status, AuthStatus.error);
+    expect(cubit.state.failure, AuthenticationFailureKind.connection);
+    expect(cubit.state.canSignIn, isTrue);
+  });
+  test('cancellation is separate from logout and duplicate cancellation is ignored', () async {
+    final operation = cubit.signInWithGoogle();
     await cubit.cancelSignIn();
-    expect(interactor.signOuts, 1);
+    await cubit.cancelSignIn();
+    await operation;
+    expect(interactor.cancellations, 1);
+    expect(cubit.state.status, AuthStatus.initial);
     expect(cubit.state.failure, AuthenticationFailureKind.cancelled);
-    await cubit.signInWithGoogle();
-    expect(interactor.launches, 2);
+    expect(cubit.state.canSignIn, isTrue);
   });
-
-  test('provider and stream failures expose only a safe retry state', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    interactor.result = const Left(AuthenticationFailure(AuthenticationFailureKind.connection));
-    await cubit.signInWithGoogle();
-    expect(cubit.state.status, AuthStatus.ready);
-    expect(cubit.state.failure, AuthenticationFailureKind.connection);
-    interactor.updates.addError(StateError('private-provider-error'));
-    await flush();
-    expect(cubit.state.failure, AuthenticationFailureKind.connection);
-  });
-
-  test('failed sign-out retains the session and retry succeeds', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedIn));
-    await flush();
-    interactor.result = const Left(AuthenticationFailure(AuthenticationFailureKind.storage));
-    await cubit.signOut();
+  test('storage failure preserves the real active session for Profile recovery', () async {
+    final operation = cubit.signInWithGoogle();
+    const failure = AuthenticationFailure(AuthenticationFailureKind.storage);
+    interactor.current = (session: AuthenticationStatus.signedIn, failure: failure);
+    interactor.result.complete(const Left(failure));
+    await operation;
+    expect(cubit.state.status, AuthStatus.error);
     expect(cubit.state.session, AuthenticationStatus.signedIn);
-    expect(cubit.state.failure, AuthenticationFailureKind.storage);
-    interactor.result = const Right(unit);
-    await cubit.signOut();
-    expect(cubit.state.session, AuthenticationStatus.signedOut);
+    expect(cubit.state.canSignIn, isFalse);
   });
-
-  test('a response arriving after page disposal does not emit on the closed Cubit', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    interactor.launch = Completer<Either<AuthenticationFailure, Unit>>();
-    final launch = cubit.signInWithGoogle();
+  test('closing cancels pending work and prevents late state emissions', () async {
+    final operation = cubit.signInWithGoogle();
     await cubit.close();
-    interactor.launch!.complete(const Left(AuthenticationFailure(AuthenticationFailureKind.connection)));
-    await launch;
+    await operation;
     expect(cubit.isClosed, isTrue);
-  });
-
-  test('failed cancellation retains the actual session for a sign-out retry', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    await cubit.signInWithGoogle();
-    interactor.signOutGate = Completer<Either<AuthenticationFailure, Unit>>();
-    final cancelling = cubit.cancelSignIn();
-    interactor.updates.add(const Right(AuthenticationStatus.signedIn));
-    await flush();
-    expect(cubit.state.status, AuthStatus.signingOut);
-    interactor.signOutGate!.complete(const Left(AuthenticationFailure(AuthenticationFailureKind.storage)));
-    await cancelling;
-    expect(cubit.state.session, AuthenticationStatus.signedIn);
-    expect(cubit.state.failure, AuthenticationFailureKind.storage);
-    expect(cubit.state.status, AuthStatus.ready);
-  });
-
-  test('a signed-out event keeps the page busy until the sign-out operation finishes', () async {
-    interactor.updates.add(const Right(AuthenticationStatus.signedIn));
-    await flush();
-    interactor.signOutGate = Completer<Either<AuthenticationFailure, Unit>>();
-    final signingOut = cubit.signOut();
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
-    await flush();
-    expect(cubit.state.status, AuthStatus.signingOut);
-    await cubit.signOut();
-    expect(interactor.signOuts, 1);
-    interactor.signOutGate!.complete(const Right(unit));
-    await signingOut;
-    expect(cubit.state.status, AuthStatus.ready);
-    expect(cubit.state.session, AuthenticationStatus.signedOut);
+    expect(interactor.disposed, isTrue);
   });
 }
 
 class _Interactor implements AuthInteractor {
-  final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>();
-  Either<AuthenticationFailure, Unit> result = const Right(unit);
-  Completer<Either<AuthenticationFailure, Unit>>? launch;
-  Completer<Either<AuthenticationFailure, Unit>>? signOutGate;
+  AuthenticationSnapshot current = (session: AuthenticationStatus.signedOut, failure: null);
+  final result = Completer<Either<AuthenticationFailure, Unit>>();
   int launches = 0;
-  int signOuts = 0;
+  int cancellations = 0;
+  bool disposed = false;
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => updates.stream;
+  AuthenticationSnapshot get snapshot => current;
   @override
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {
+  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() {
     launches++;
-    return launch == null ? result : await launch!.future;
+    return result.future;
   }
 
   @override
-  Future<Either<AuthenticationFailure, Unit>> signOut() async {
-    signOuts++;
-    return signOutGate == null ? result : await signOutGate!.future;
+  Future<Either<AuthenticationFailure, Unit>> cancelSignIn() async {
+    cancellations++;
+    if (!result.isCompleted) result.complete(const Left(AuthenticationFailure(AuthenticationFailureKind.cancelled)));
+    return const Right(unit);
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+    if (!result.isCompleted) await cancelSignIn();
   }
 }

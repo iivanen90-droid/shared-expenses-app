@@ -6,7 +6,10 @@ final class AuthRepositoryImpl implements AuthRepository {
   final AuthService _service;
 
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => _service.watchStatus();
+  AuthenticationSnapshot get snapshot => _service.snapshot;
+
+  @override
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchChanges() => _service.watchStatus(replay: false);
   @override
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() => _service.signInWithGoogle();
   @override

@@ -12,9 +12,12 @@ final class AuthenticationFailure extends Failure implements Exception {
   String toString() => 'AuthenticationFailure(${kind.name})';
 }
 
+typedef AuthenticationSnapshot = ({AuthenticationStatus session, AuthenticationFailure? failure});
+
 abstract interface class AuthService {
+  AuthenticationSnapshot get snapshot;
   Future<void> initialize();
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus();
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus({bool replay = true});
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle();
   Future<Either<AuthenticationFailure, Unit>> signOut();
 }

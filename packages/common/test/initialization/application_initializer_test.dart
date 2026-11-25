@@ -169,12 +169,14 @@ final class _Reporter implements CrashReportingService {
 }
 
 class _StartupAuthService implements AuthService {
+  @override
+  AuthenticationSnapshot get snapshot => (session: AuthenticationStatus.unconfigured, failure: null);
   final _ready = Completer<void>();
   void complete() => _ready.complete();
   @override
   Future<void> initialize() => _ready.future;
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => const Stream.empty();
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus({bool replay = true}) => const Stream.empty();
   @override
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async => const Right(unit);
   @override

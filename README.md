@@ -273,7 +273,7 @@ through the typed StatefulShellRoute. Home reads the local ObjectBox group list 
 New group opens a modal sheet. Start a new group opens the group form, which confirms a successful
 local save. The confirmation action and the Home list open the group by ID. Back returns to Home.
 Join an existing group opens a screen that displays a local notice when a nonblank invitation is submitted.
-Profile opens the optional authentication screen. The UI uses the app theme and en/uk localization.
+Profile opens optional sign-in for guests and provides sign-out for authenticated users. Confirmed sign-in returns to Home. The UI uses the app theme and en/uk localization.
 Material widgets use MaterialPage on Android and SDK CupertinoPage on iOS.
 
 After route changes, run from packages/router:

@@ -1,7 +1,8 @@
 import 'package:core/core.dart';
 
 abstract interface class AuthRepository {
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus();
+  AuthenticationSnapshot get snapshot;
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchChanges();
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle();
   Future<Either<AuthenticationFailure, Unit>> signOut();
 }
