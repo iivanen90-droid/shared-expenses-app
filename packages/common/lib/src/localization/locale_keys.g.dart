@@ -46,4 +46,23 @@ abstract class LocaleKeys {
   static const joinGroupLinkHint = 'joinGroupLinkHint';
   static const joinGroupAction = 'joinGroupAction';
   static const joinGroupUnavailable = 'joinGroupUnavailable';
+  static const authAccount = 'authAccount';
+  static const authTitle = 'authTitle';
+  static const authDescription = 'authDescription';
+  static const authGoogle = 'authGoogle';
+  static const authSignOut = 'authSignOut';
+  static const authSignedIn = 'authSignedIn';
+  static const authWaiting = 'authWaiting';
+  static const authCancel = 'authCancel';
+  static const authCancelled = 'authCancelled';
+  static const authNotConfigured = 'authNotConfigured';
+  static const authFailed = 'authFailed';
+  static const authStorageFailed = 'authStorageFailed';
+  static const authCancelling = 'authCancelling';
+  static const profileNameMissing = 'profileNameMissing';
+  static const profileEmailMissing = 'profileEmailMissing';
+  static const profileLanguage = 'profileLanguage';
+  static const profileLoadFailed = 'profileLoadFailed';
+  static const profileLanguageFailed = 'profileLanguageFailed';
+  static const profileLogoutFailed = 'profileLogoutFailed';
 }
