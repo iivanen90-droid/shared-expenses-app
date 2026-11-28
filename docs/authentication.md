@@ -132,3 +132,48 @@ Sources [Supabase Google setup](https://supabase.com/docs/guides/auth/social-sig
 [Flutter OAuth](https://supabase.com/docs/reference/dart/auth-signinwithoauth),
 [auth stream errors](https://supabase.com/docs/reference/dart/auth-onauthstatechange),
 [secure storage](https://pub.dev/packages/flutter_secure_storage).
+
+## Review simplification and cancellation boundary (2026-11-28)
+
+The locked SDK (`supabase_flutter` 2.18.3) launches OAuth with a `Future<bool>`;
+it reports the confirmed session separately through `onAuthStateChange`.
+See the [OAuth reference](https://supabase.com/docs/reference/dart/auth-signinwithoauth)
+and [auth events](https://supabase.com/docs/reference/dart/auth-onauthstatechange).
+A successful browser launch is therefore not a final sign-in result.
+
+`AuthInteractor.signInWithGoogle()` returns one shared **operation** Future to all
+callers. A received SDK result is a separate internal signal. Cancellation and
+page disposal must still clear the session if that signal arrived while the
+browser-launch Future was pending. Cleanup failure wins over an earlier success;
+successful cancellation returns cancelled to every caller. No second provider
+or generic provider parameter is introduced in this refactor.
+
+The small `_PendingSignIn` object holds only the event result, browser launch,
+shared operation and optional cleanup Future. There is no independently mutable
+cancelling flag: cancellation is derived from the cleanup Future. The object
+exists because these asynchronous steps have different completion boundaries;
+removing it by spreading the same fields over the Interactor would not simplify
+the protocol.
+
+`AuthService.snapshot` reads the current session and safe persistence failure.
+`watchStatus()` now publishes **future changes only**: the custom replay stream
+and its boolean mode were removed. Auth initializes from snapshot; Profile reads
+snapshot and observes future changes. Old errors are not replayed into a new
+sign-in attempt. The service derives session presence directly from the SDK,
+without a second mutable status field. Failure notifications use one emission
+path, including failed logout cleanup.
+
+`SecureAuthStorage` is retained as the SDK-required `LocalStorage` and
+`GotrueAsyncStorage` adapter, not as another encrypted-storage implementation.
+The locked SDK calls `persistSession`/`removePersistedSession` itself during auth
+events; a Repository that writes SecureStorage manually would not replace those
+hooks. The adapter delegates encryption to SecureStorage, namespaces keys by
+project/environment, serializes writes, and remembers failed keys. Removing
+these guarantees would regress late-refresh/logout and storage-failure tests.
+The callback queue also remains: the SDK's in-flight code exchange can install
+a session after sign-out, so cleanup drains the exchange before reporting success.
+
+Regression tests cover early signed-in events followed by cancellation/disposal,
+duplicate callers waiting on the same operation, and failure to clear an already
+active session. SDK tests retain real fake-transport session restore, late PKCE
+exchange, safe storage failures, and offline cleanup coverage.

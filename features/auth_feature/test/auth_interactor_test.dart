@@ -63,6 +63,53 @@ void main() {
     expect((await operation).getLeft().toNullable()?.kind, AuthenticationFailureKind.cancelled);
     expect(repository.snapshot.session, AuthenticationStatus.signedOut);
   });
+  for (final closeOwner in [false, true]) {
+    test(
+      'early signed-in event still allows ${closeOwner ? 'disposal' : 'cancellation'} before launch finishes',
+      () async {
+        final operation = interactor.signInWithGoogle();
+        repository.publish(const Right(AuthenticationStatus.signedIn));
+        await flush();
+        final cleanup = closeOwner ? interactor.dispose() : interactor.cancelSignIn();
+        repository.launch.complete(const Right(unit));
+        await cleanup;
+        final result = await operation;
+        expect(result.getLeft().toNullable()?.kind, AuthenticationFailureKind.cancelled);
+        expect(repository.signOuts, 1);
+        expect(repository.snapshot.session, AuthenticationStatus.signedOut);
+        expect(repository.updates.hasListener, isFalse);
+      },
+    );
+  }
+
+  test('duplicate callers wait for the same final operation and cancellation', () async {
+    final first = interactor.signInWithGoogle();
+    final second = interactor.signInWithGoogle();
+    expect(identical(first, second), isTrue);
+    var finished = false;
+    second.then((_) => finished = true);
+    repository.publish(const Right(AuthenticationStatus.signedIn));
+    await flush();
+    expect(finished, isFalse);
+    final cancelling = interactor.cancelSignIn();
+    repository.launch.complete(const Right(unit));
+    await cancelling;
+    expect((await first).getLeft().toNullable()?.kind, AuthenticationFailureKind.cancelled);
+    expect((await second).getLeft().toNullable()?.kind, AuthenticationFailureKind.cancelled);
+  });
+
+  test('early success cannot hide a failed cancellation cleanup', () async {
+    final operation = interactor.signInWithGoogle();
+    repository.publish(const Right(AuthenticationStatus.signedIn));
+    await flush();
+    repository.cleanupResult = const Left(AuthenticationFailure(AuthenticationFailureKind.storage));
+    final cancelling = interactor.cancelSignIn();
+    repository.launch.complete(const Right(unit));
+    await cancelling;
+    expect((await operation).getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
+    expect(repository.snapshot.session, AuthenticationStatus.signedIn);
+  });
+
   test('failed cleanup returns its error and preserves the active session', () async {
     final operation = interactor.signInWithGoogle();
     repository.cleanupResult = const Left(AuthenticationFailure(AuthenticationFailureKind.storage));

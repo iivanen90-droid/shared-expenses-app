@@ -32,9 +32,8 @@ void main() {
     );
     try {
       await service.initialize();
-      final events = await service.watchStatus().take(2).toList();
-      expect(events.first.getOrElse((_) => throw StateError('Expected status')), AuthenticationStatus.unconfigured);
-      expect(events.last.getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
+      expect(service.snapshot.session, AuthenticationStatus.unconfigured);
+      expect(service.snapshot.failure?.kind, AuthenticationFailureKind.storage);
       // Failed initialization must not leave a global SDK instance behind.
       expect(() => Supabase.instance, throwsAssertionError);
     } finally {
@@ -49,8 +48,7 @@ void main() {
     );
     try {
       await recovered.initialize();
-      final status = await recovered.watchStatus().first;
-      expect(status.getOrElse((_) => throw StateError('Unexpected failure')), AuthenticationStatus.signedOut);
+      expect(recovered.snapshot.session, AuthenticationStatus.signedOut);
     } finally {
       await recovered.dispose();
     }
@@ -142,7 +140,7 @@ void main() {
     }
   });
 
-  test('a new subscriber receives the active session even after an auth stream error', () async {
+  test('snapshot preserves the active session after an auth stream error without replaying it', () async {
     final harness = await _AuthHarness.create();
     try {
       final signedIn = harness.service.watchStatus().firstWhere(
@@ -160,9 +158,13 @@ void main() {
         StackTrace.current,
       );
       await failure;
-      final reopened = await harness.service.watchStatus().take(2).toList();
-      expect(reopened.first.getOrElse((_) => AuthenticationStatus.unconfigured), AuthenticationStatus.signedIn);
-      expect(reopened.last.isLeft(), isTrue);
+      expect(harness.service.snapshot.session, AuthenticationStatus.signedIn);
+      expect(harness.service.snapshot.failure?.kind, AuthenticationFailureKind.connection);
+      final freshEvents = <Either<AuthenticationFailure, AuthenticationStatus>>[];
+      final freshSubscription = harness.service.watchStatus().listen(freshEvents.add);
+      await Future<void>.delayed(Duration.zero);
+      expect(freshEvents, isEmpty);
+      await freshSubscription.cancel();
       expect((await harness.service.signOut()).isRight(), isTrue);
       expect(await harness.storage.accessToken(), isNull);
     } finally {
@@ -214,8 +216,7 @@ void main() {
 
     final reopened = await _AuthHarness.create();
     try {
-      final status = await reopened.service.watchStatus().first;
-      expect(status.getOrElse((_) => AuthenticationStatus.unconfigured), AuthenticationStatus.signedIn);
+      expect(reopened.service.snapshot.session, AuthenticationStatus.signedIn);
       expect((await reopened.service.signOut()).isRight(), isTrue);
       expect(await reopened.storage.accessToken(), isNull);
       expect(reopened.supabase.client.auth.currentSession, isNull);

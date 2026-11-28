@@ -2,7 +2,10 @@ import 'package:core/src/auth/auth_service.dart';
 import 'package:core/src/secure_storage/secure_storage.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-/// Serializes writes so a token refresh cannot restore a session after sign-out.
+/// Supabase's LocalStorage/GotrueAsyncStorage adapter over the shared encrypted store.
+/// The SDK calls these methods itself during session restore, refresh and PKCE;
+/// repository-only reads/writes would not intercept that SDK persistence.
+/// Writes are serialized so token refresh cannot restore a session after sign-out.
 final class SecureAuthStorage extends LocalStorage implements GotrueAsyncStorage {
   SecureAuthStorage({required this._namespace, SecureStorage? storage}) : _storage = storage ?? SecureStorageImpl();
 
