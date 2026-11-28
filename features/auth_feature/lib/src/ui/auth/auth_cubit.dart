@@ -1,90 +1,56 @@
-import 'dart:async';
-
 import 'package:auth_feature/src/domain/interactor/auth_interactor.dart';
+import 'package:auth_feature/src/domain/interactor/auth_session_interactor.dart';
 import 'package:auth_feature/src/ui/auth/auth_state.dart';
 import 'package:common/common.dart';
 import 'package:core/core.dart';
 
 final class AuthCubit extends SafeCubitWrapper<AuthState> {
-  AuthCubit({required this._interactor}) : super(const AuthState());
-
+  AuthCubit({required this._interactor, required this._sessions}) : super(const AuthState());
   final AuthInteractor _interactor;
-  StreamSubscription<Either<AuthenticationFailure, AuthenticationStatus>>? _subscription;
-  bool _operationInFlight = false;
+  final AuthSessionInteractor _sessions;
 
   void initialize() {
-    _subscription ??= _interactor.watchStatus().listen(
-      (result) {
-        result.match((failure) => emit(state.copyWith(status: AuthStatus.ready, failure: failure.kind)), (session) {
-          emit(
-            AuthState(
-              status: state.status == AuthStatus.signingOut ? AuthStatus.signingOut : AuthStatus.ready,
-              session: session,
-            ),
-          );
-        });
-      },
-      onError: (Object _, StackTrace _) =>
-          emit(state.copyWith(status: AuthStatus.ready, failure: AuthenticationFailureKind.connection)),
-    );
+    final current = _sessions.current;
+    var status = AuthStatus.initial;
+    if (current.session == AuthenticationStatus.signedIn) status = AuthStatus.authenticated;
+    if (current.failure != null) status = AuthStatus.error;
+    emit(AuthState(status: status, session: current.session, failure: current.failure?.kind));
   }
 
   Future<void> signInWithGoogle() async {
-    if (isClosed ||
-        _operationInFlight ||
-        state.status != AuthStatus.ready ||
-        state.session != AuthenticationStatus.signedOut) {
-      return;
-    }
-    _operationInFlight = true;
-    emit(state.copyWith(status: AuthStatus.waitingForGoogle, failure: null));
-    try {
-      final result = await _interactor.signInWithGoogle();
-      result.match((failure) => emit(state.copyWith(status: AuthStatus.ready, failure: failure.kind)), (_) {});
-    } finally {
-      _operationInFlight = false;
-    }
+    if (isClosed || !state.canSignIn) return;
+    emit(state.copyWith(status: AuthStatus.loading, failure: null));
+    final result = await _interactor.signIn(source: AuthSource.google);
+    if (isClosed || state.status == AuthStatus.cancelling) return;
+    result.match(
+      _showFailure,
+      (_) => emit(AuthState(status: AuthStatus.authenticated, session: _sessions.current.session)),
+    );
   }
 
   Future<void> cancelSignIn() async {
-    if (isClosed || state.status != AuthStatus.waitingForGoogle || _operationInFlight) return;
-    _operationInFlight = true;
-    emit(state.copyWith(status: AuthStatus.signingOut));
-    try {
-      final result = await _interactor.signOut();
-      result.match(
-        (failure) => emit(state.copyWith(status: AuthStatus.ready, failure: failure.kind)),
-        (_) => emit(
-          const AuthState(
-            status: AuthStatus.ready,
-            session: AuthenticationStatus.signedOut,
-            failure: AuthenticationFailureKind.cancelled,
-          ),
-        ),
-      );
-    } finally {
-      _operationInFlight = false;
-    }
+    if (isClosed || state.status != AuthStatus.loading) return;
+    emit(state.copyWith(status: AuthStatus.cancelling));
+    final result = await _interactor.signOut();
+    result.match(
+      _showFailure,
+      (_) => emit(AuthState(session: _sessions.current.session, failure: AuthenticationFailureKind.cancelled)),
+    );
   }
 
-  Future<void> signOut() async {
-    if (isClosed || _operationInFlight || state.session != AuthenticationStatus.signedIn) return;
-    _operationInFlight = true;
-    emit(state.copyWith(status: AuthStatus.signingOut, failure: null));
-    try {
-      final result = await _interactor.signOut();
-      result.match(
-        (failure) => emit(state.copyWith(status: AuthStatus.ready, failure: failure.kind)),
-        (_) => emit(const AuthState(status: AuthStatus.ready, session: AuthenticationStatus.signedOut)),
-      );
-    } finally {
-      _operationInFlight = false;
-    }
-  }
+  void _showFailure(AuthenticationFailure failure) => emit(
+    AuthState(
+      status: failure.kind == AuthenticationFailureKind.cancelled ? AuthStatus.initial : AuthStatus.error,
+      session: _sessions.current.session,
+      failure: failure.kind,
+    ),
+  );
 
   @override
   Future<void> close() async {
-    await _subscription?.cancel();
+    if (isClosed) return;
+    final cancelPending = state.isBusy;
     await super.close();
+    if (cancelPending) await _interactor.signOut();
   }
 }

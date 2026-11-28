@@ -9,17 +9,17 @@ void main() {
     final auth = _Auth();
     final interactor = ProfileInteractorImpl(
       repository: ProfileRepositoryImpl(
-        source: ProfileSourceImpl(auth: auth, languages: _Languages()),
+        source: ProfileSourceImpl(auth: auth, sessions: auth, languages: _Languages()),
       ),
     );
-    final snapshot = (await interactor.watch().first).getOrElse((_) => throw StateError('profile'));
+    final snapshot = interactor.current;
     expect(snapshot.session, AuthenticationStatus.signedOut);
     expect(snapshot.profile, isNull);
   });
   test('storage and unexpected logout exceptions become safe typed failures', () async {
     final interactor = ProfileInteractorImpl(
       repository: ProfileRepositoryImpl(
-        source: ProfileSourceImpl(auth: _Auth(), languages: _Languages()..fail = true),
+        source: ProfileSourceImpl(auth: _Auth(), sessions: _Auth(), languages: _Languages()..fail = true),
       ),
     );
     expect((await interactor.saveLanguage(AppLanguage.uk)).isLeft(), isTrue);
@@ -37,17 +37,18 @@ class _Languages implements LanguagePreferences {
   }
 }
 
-class _Auth implements AuthService {
+class _Auth implements AuthService, AuthSessionSource {
+  @override
+  AuthenticationSnapshot get current => (session: AuthenticationStatus.signedOut, failure: null);
   @override
   AuthenticationProfile? get currentProfile =>
       const AuthenticationProfile(name: 'Old User', email: 'old@example.invalid');
   @override
   Future<void> initialize() async {}
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() =>
-      Stream.value(const Right(AuthenticationStatus.signedOut));
+  Stream<AuthenticationSnapshot> watchChanges() => const Stream.empty();
   @override
   Future<Either<AuthenticationFailure, Unit>> signOut() async => throw StateError('Test logout failure');
   @override
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async => const Right(unit);
+  Future<Either<AuthenticationFailure, Unit>> launchSignIn({required AuthSource source}) async => const Right(unit);
 }

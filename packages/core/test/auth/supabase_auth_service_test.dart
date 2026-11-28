@@ -2,10 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:core/core.dart';
-import 'package:core/src/auth/secure_auth_storage.dart';
+import 'package:core/src/auth/supabase_storage_adapter.dart';
 import 'package:core/src/auth/supabase_auth_service.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+import '../support/secure_storage_backend.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -17,30 +20,67 @@ void main() {
   test('profile uses current SDK identity and disappears after sign-out', () async {
     final harness = await _AuthHarness.create();
     try {
-      expect(harness.service.currentProfile, isNull);
+      expect(harness.service.sessionSource.currentProfile, isNull);
       await harness.startCallback();
       final data = jsonDecode(_sessionResponse().body) as Map<String, dynamic>;
       final user = data['user'] as Map<String, dynamic>;
       user['email'] = 'test@example.invalid';
       user['user_metadata'] = {'full_name': '  Test Person  '};
       harness.response.complete(http.Response(jsonEncode(data), 200));
-      await harness.service.watchStatus().firstWhere(
-        (result) => result.getOrElse((_) => AuthenticationStatus.unconfigured) == AuthenticationStatus.signedIn,
+      await harness.service.sessionSource.watchChanges().firstWhere(
+        (account) => account.session == AuthenticationStatus.signedIn,
       );
-      expect(harness.service.currentProfile?.name, 'Test Person');
-      expect(harness.service.currentProfile?.email, 'test@example.invalid');
-      expect(harness.service.currentProfile.toString(), isNot(contains('test@example.invalid')));
+      expect(harness.service.sessionSource.currentProfile?.name, 'Test Person');
+      expect(harness.service.sessionSource.currentProfile?.email, 'test@example.invalid');
+      expect(harness.service.sessionSource.currentProfile.toString(), isNot(contains('test@example.invalid')));
       await harness.service.signOut();
-      expect(harness.service.currentProfile, isNull);
+      expect(harness.service.sessionSource.currentProfile, isNull);
     } finally {
       await harness.dispose();
     }
   });
 
+  test('unreadable storage fails before SDK initialization and a later service can start cleanly', () async {
+    final backend = TestSecureStorageBackend()..failSessionReads = true;
+    final secure = SecureStorageImpl(storage: backend);
+    const configuration = AuthConfiguration(
+      url: 'https://example.supabase.co',
+      publishableKey: 'sb_publishable_test',
+      environment: EnvironmentType.dev,
+    );
+    final service = SupabaseAuthService(
+      configuration: configuration,
+      storage: secure,
+      callbackLinks: const Stream.empty(),
+    );
+    try {
+      await service.initialize();
+      expect(service.sessionSource.current.session, AuthenticationStatus.unconfigured);
+      expect(service.sessionSource.current.failure?.kind, AuthenticationFailureKind.storage);
+      // Failed initialization must not leave a global SDK instance behind.
+      expect(() => Supabase.instance, throwsAssertionError);
+    } finally {
+      await service.dispose();
+    }
+
+    backend.failSessionReads = false;
+    final recovered = SupabaseAuthService(
+      configuration: configuration,
+      storage: secure,
+      callbackLinks: const Stream.empty(),
+    );
+    try {
+      await recovered.initialize();
+      expect(recovered.sessionSource.current.session, AuthenticationStatus.signedOut);
+    } finally {
+      await recovered.dispose();
+    }
+  });
+
   test('cancel waits for an in-flight PKCE exchange and clears its late session before success', () async {
     final harness = await _AuthHarness.create();
-    final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
-    final subscription = harness.service.watchStatus().listen(events.add);
+    final events = <AuthenticationSnapshot>[];
+    final subscription = harness.service.sessionSource.watchChanges().listen(events.add);
     try {
       await harness.startCallback();
       var cancelled = false;
@@ -52,16 +92,11 @@ void main() {
       expect(cancelled, isFalse);
       harness.response.complete(_sessionResponse());
       expect((await cancelling).isRight(), isTrue);
-      await harness.storage.pending;
+      await harness.secure.flush();
       await Future<void>.delayed(Duration.zero);
       expect(harness.supabase.client.auth.currentSession, isNull);
       expect(await harness.storage.accessToken(), isNull);
-      expect(
-        events.any(
-          (event) => event.getOrElse((_) => AuthenticationStatus.unconfigured) == AuthenticationStatus.signedIn,
-        ),
-        isFalse,
-      );
+      expect(events.any((event) => event.session == AuthenticationStatus.signedIn), isFalse);
 
       // An additional callback received after cancellation must not create another request.
       harness.links.add(Uri.parse('sharedexpenses-dev://auth-callback?code=late-code'));
@@ -74,10 +109,10 @@ void main() {
   });
 
   test('failed cancellation publishes its actual active session and permits a cleanup retry', () async {
-    final backend = _FailingSessionStorage();
+    final backend = TestSecureStorageBackend();
     final harness = await _AuthHarness.create(backend: backend);
-    final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
-    final subscription = harness.service.watchStatus().listen(events.add);
+    final events = <AuthenticationSnapshot>[];
+    final subscription = harness.service.sessionSource.watchChanges().listen(events.add);
     try {
       await harness.startCallback();
       backend.failSessionDeletes = true;
@@ -88,11 +123,8 @@ void main() {
       expect(result.getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
       expect(harness.supabase.client.auth.currentSession, isNotNull);
       expect(await harness.storage.hasAccessToken(), isTrue);
-      expect(
-        events[events.length - 2].getOrElse((_) => AuthenticationStatus.unconfigured),
-        AuthenticationStatus.signedIn,
-      );
-      expect(events.last.isLeft(), isTrue);
+      expect(events.last.session, AuthenticationStatus.signedIn);
+      expect(events.last.failure != null, isTrue);
       backend.failSessionDeletes = false;
       expect((await harness.service.signOut()).isRight(), isTrue);
       expect(harness.supabase.client.auth.currentSession, isNull);
@@ -105,8 +137,8 @@ void main() {
 
   test('a failed in-flight exchange also completes cancellation without surfacing its obsolete error', () async {
     final harness = await _AuthHarness.create();
-    final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
-    final subscription = harness.service.watchStatus().listen(events.add);
+    final events = <AuthenticationSnapshot>[];
+    final subscription = harness.service.sessionSource.watchChanges().listen(events.add);
     try {
       await harness.startCallback();
       final cancelling = harness.service.signOut();
@@ -115,7 +147,7 @@ void main() {
       );
       expect((await cancelling).isRight(), isTrue);
       await Future<void>.delayed(Duration.zero);
-      expect(events.any((event) => event.isLeft()), isFalse);
+      expect(events.any((event) => event.failure != null), isFalse);
       expect(await harness.storage.accessToken(), isNull);
     } finally {
       await subscription.cancel();
@@ -123,17 +155,17 @@ void main() {
     }
   });
 
-  test('a new subscriber receives the active session even after an auth stream error', () async {
+  test('snapshot preserves the active session after an auth stream error without replaying it', () async {
     final harness = await _AuthHarness.create();
     try {
-      final signedIn = harness.service.watchStatus().firstWhere(
-        (event) => event.getOrElse((_) => AuthenticationStatus.unconfigured) == AuthenticationStatus.signedIn,
+      final signedIn = harness.service.sessionSource.watchChanges().firstWhere(
+        (event) => event.session == AuthenticationStatus.signedIn,
       );
       await harness.startCallback();
       harness.response.complete(_sessionResponse());
       await signedIn;
       harness.supabase.client.auth.currentSession!.expiresAt = DateTime.now().millisecondsSinceEpoch ~/ 1000 - 60;
-      final failure = harness.service.watchStatus().firstWhere((event) => event.isLeft());
+      final failure = harness.service.sessionSource.watchChanges().firstWhere((event) => event.failure != null);
       // Inject the same SDK stream event delivered by a failed background token refresh.
       // ignore: invalid_use_of_internal_member
       harness.supabase.client.auth.notifyException(
@@ -141,9 +173,13 @@ void main() {
         StackTrace.current,
       );
       await failure;
-      final reopened = await harness.service.watchStatus().take(2).toList();
-      expect(reopened.first.getOrElse((_) => AuthenticationStatus.unconfigured), AuthenticationStatus.signedIn);
-      expect(reopened.last.isLeft(), isTrue);
+      expect(harness.service.sessionSource.current.session, AuthenticationStatus.signedIn);
+      expect(harness.service.sessionSource.current.failure?.kind, AuthenticationFailureKind.connection);
+      final freshEvents = <AuthenticationSnapshot>[];
+      final freshSubscription = harness.service.sessionSource.watchChanges().listen(freshEvents.add);
+      await Future<void>.delayed(Duration.zero);
+      expect(freshEvents, isEmpty);
+      await freshSubscription.cancel();
       expect((await harness.service.signOut()).isRight(), isTrue);
       expect(await harness.storage.accessToken(), isNull);
     } finally {
@@ -152,22 +188,19 @@ void main() {
   });
 
   test('an existing subscriber receives the active session when secure persistence fails', () async {
-    final backend = _FailingSessionStorage();
+    final backend = TestSecureStorageBackend();
     final harness = await _AuthHarness.create(backend: backend);
-    final events = <Either<AuthenticationFailure, AuthenticationStatus>>[];
-    final subscription = harness.service.watchStatus().listen(events.add);
+    final events = <AuthenticationSnapshot>[];
+    final subscription = harness.service.sessionSource.watchChanges().listen(events.add);
     try {
-      final failure = harness.service.watchStatus().firstWhere((event) => event.isLeft());
+      final failure = harness.service.sessionSource.watchChanges().firstWhere((event) => event.failure != null);
       await harness.startCallback();
       backend.failSessionWrites = true;
       harness.response.complete(_sessionResponse());
       final error = await failure;
-      expect(error.getLeft().toNullable()?.kind, AuthenticationFailureKind.storage);
-      expect(
-        events[events.length - 2].getOrElse((_) => AuthenticationStatus.unconfigured),
-        AuthenticationStatus.signedIn,
-      );
-      expect(events.last.isLeft(), isTrue);
+      expect(error.failure?.kind, AuthenticationFailureKind.storage);
+      expect(events.last.session, AuthenticationStatus.signedIn);
+      expect(events.last.failure != null, isTrue);
       expect(harness.supabase.client.auth.currentSession, isNotNull);
       expect(await harness.storage.accessToken(), isNull);
       backend.failSessionWrites = false;
@@ -182,8 +215,8 @@ void main() {
   test('a completed SDK session is saved, restored by a new service and removed by sign-out', () async {
     final first = await _AuthHarness.create();
     try {
-      final signedIn = first.service.watchStatus().firstWhere(
-        (event) => event.getOrElse((_) => AuthenticationStatus.unconfigured) == AuthenticationStatus.signedIn,
+      final signedIn = first.service.sessionSource.watchChanges().firstWhere(
+        (event) => event.session == AuthenticationStatus.signedIn,
       );
       await first.startCallback();
       first.response.complete(_sessionResponse());
@@ -195,8 +228,7 @@ void main() {
 
     final reopened = await _AuthHarness.create();
     try {
-      final status = await reopened.service.watchStatus().first;
-      expect(status.getOrElse((_) => AuthenticationStatus.unconfigured), AuthenticationStatus.signedIn);
+      expect(reopened.service.sessionSource.current.session, AuthenticationStatus.signedIn);
       expect((await reopened.service.signOut()).isRight(), isTrue);
       expect(await reopened.storage.accessToken(), isNull);
       expect(reopened.supabase.client.auth.currentSession, isNull);
@@ -237,12 +269,12 @@ http.Response _sessionResponse() {
 }
 
 class _AuthHarness {
-  _AuthHarness({FlutterSecureStorage? backend})
-    : storage = SecureAuthStorage(namespace: 'test-auth-project', storage: backend);
+  _AuthHarness({FlutterSecureStorage? backend}) : secure = SecureStorageImpl(storage: backend);
+  final SecureStorage secure;
+  late final storage = SupabaseStorageAdapter(namespace: 'test-auth-project', storage: secure);
   final links = StreamController<Uri>.broadcast();
   final requested = Completer<void>();
   final response = Completer<http.Response>();
-  final SecureAuthStorage storage;
   late final Supabase supabase;
   late final SupabaseAuthService service;
   int tokenRequests = 0;
@@ -276,7 +308,7 @@ class _AuthHarness {
     );
     harness.service = SupabaseAuthService(
       configuration: configuration,
-      storage: harness.storage,
+      storage: harness.secure,
       callbackLinks: harness.links.stream,
     );
     await harness.service.initialize();
@@ -292,60 +324,5 @@ class _AuthHarness {
   Future<void> dispose() async {
     await service.dispose();
     await links.close();
-  }
-}
-
-class _FailingSessionStorage extends FlutterSecureStorage {
-  bool failSessionWrites = false;
-  bool failSessionDeletes = false;
-
-  @override
-  Future<void> delete({
-    required String key,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (failSessionDeletes && key.endsWith(':session')) {
-      throw StateError('test-only secure delete failure');
-    }
-    await super.delete(
-      key: key,
-      iOptions: iOptions,
-      aOptions: aOptions,
-      lOptions: lOptions,
-      webOptions: webOptions,
-      mOptions: mOptions,
-      wOptions: wOptions,
-    );
-  }
-
-  @override
-  Future<void> write({
-    required String key,
-    required String? value,
-    AppleOptions? iOptions,
-    AndroidOptions? aOptions,
-    LinuxOptions? lOptions,
-    WebOptions? webOptions,
-    AppleOptions? mOptions,
-    WindowsOptions? wOptions,
-  }) async {
-    if (failSessionWrites && key.endsWith(':session')) {
-      throw StateError('test-only secure storage failure');
-    }
-    await super.write(
-      key: key,
-      value: value,
-      iOptions: iOptions,
-      aOptions: aOptions,
-      lOptions: lOptions,
-      webOptions: webOptions,
-      mOptions: mOptions,
-      wOptions: wOptions,
-    );
   }
 }

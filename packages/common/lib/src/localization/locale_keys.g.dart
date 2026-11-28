@@ -58,6 +58,7 @@ abstract class LocaleKeys {
   static const authNotConfigured = 'authNotConfigured';
   static const authFailed = 'authFailed';
   static const authStorageFailed = 'authStorageFailed';
+  static const authCancelling = 'authCancelling';
   static const profileNameMissing = 'profileNameMissing';
   static const profileEmailMissing = 'profileEmailMissing';
   static const profileLanguage = 'profileLanguage';

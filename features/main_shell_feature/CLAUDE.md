@@ -3,7 +3,7 @@
 Router declares typed routes and supplies
 StatefulNavigationShell to MainShellPage, which renders it and switches branches locally.
 The shell exposes Home and Profile. Profile uses Page → Cubit → Interactor → Repository → Source
-for the current AuthService identity, LanguagePreferences and sign-out. Guests can open auth.
+for read-only AuthSessionSource identity, LanguagePreferences and AuthService sign-out. Guests can open auth.
 Do not import other feature packages. Keep personal fields out of diagnostics and settings.
 Save language before applying it. Only successful logout replaces the root route with auth.
 Do not delete/reassign device-local groups. Details: [Profile](../../docs/profile.md).

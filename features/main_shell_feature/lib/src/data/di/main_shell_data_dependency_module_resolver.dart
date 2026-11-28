@@ -8,6 +8,7 @@ abstract interface class MainShellDataDependencyModuleResolver {
     DependencyProvider.registerLazySingleton<ProfileSource>(
       () => ProfileSourceImpl(
         auth: DependencyProvider.get<AuthService>(),
+        sessions: DependencyProvider.get<AuthSessionSource>(),
         languages: DependencyProvider.get<LanguagePreferences>(),
       ),
     );

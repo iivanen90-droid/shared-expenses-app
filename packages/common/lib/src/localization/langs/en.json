@@ -54,6 +54,7 @@
   "authNotConfigured": "Sign-in is currently unavailable. You can keep using local groups.",
   "authFailed": "Unable to complete authentication. Check your connection and try again.",
   "authStorageFailed": "Unable to save or remove your session securely. Please try again.",
+  "authCancelling": "Cancelling sign-in…",
   "profileNameMissing": "Name unavailable",
   "profileEmailMissing": "Email unavailable",
   "profileLanguage": "Language",

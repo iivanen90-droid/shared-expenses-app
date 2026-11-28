@@ -20,10 +20,13 @@ final class AuthenticationFailure extends Failure implements Exception {
   String toString() => 'AuthenticationFailure(${kind.name})';
 }
 
+typedef AuthenticationSnapshot = ({AuthenticationStatus session, AuthenticationFailure? failure});
+
+enum AuthSource { google }
+
+/// SDK commands. launchSignIn opens the provider; the session source confirms sign-in.
 abstract interface class AuthService {
-  AuthenticationProfile? get currentProfile;
   Future<void> initialize();
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus();
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle();
+  Future<Either<AuthenticationFailure, Unit>> launchSignIn({required AuthSource source});
   Future<Either<AuthenticationFailure, Unit>> signOut();
 }

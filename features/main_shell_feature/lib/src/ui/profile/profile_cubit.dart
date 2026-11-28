@@ -21,16 +21,20 @@ final class ProfileCubit extends SafeCubitWrapper<ProfileState> {
             status: state.status == ProfileStatus.loading ? ProfileStatus.ready : state.status,
           ),
         ),
-        (snapshot) => emit(
-          state.copyWith(
-            session: snapshot.session,
-            profile: snapshot.profile,
-            status: state.status == ProfileStatus.loading ? ProfileStatus.ready : state.status,
-          ),
-        ),
+        _publish,
       );
     });
+    _publish(_interactor.current);
   }
+
+  void _publish(ProfileSnapshot snapshot) => emit(
+    state.copyWith(
+      session: snapshot.session,
+      profile: snapshot.profile,
+      failure: snapshot.failure == null ? null : ProfileFailure.loading,
+      status: state.status == ProfileStatus.loading ? ProfileStatus.ready : state.status,
+    ),
+  );
 
   Future<void> changeLanguage(AppLanguage language) async {
     if (isClosed || state.busy || state.language == language) return;

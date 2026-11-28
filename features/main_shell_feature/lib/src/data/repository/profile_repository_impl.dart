@@ -6,13 +6,9 @@ final class ProfileRepositoryImpl implements ProfileRepository {
   const ProfileRepositoryImpl({required this._source});
   final ProfileSource _source;
   @override
-  Stream<Either<AuthenticationFailure, ProfileSnapshot>> watch() async* {
-    try {
-      yield* _source.watch();
-    } on Object {
-      yield const Left(AuthenticationFailure(AuthenticationFailureKind.connection));
-    }
-  }
+  ProfileSnapshot get current => _source.current;
+  @override
+  Stream<Either<AuthenticationFailure, ProfileSnapshot>> watch() => _source.watch();
 
   @override
   Future<Either<AuthenticationFailure, Unit>> signOut() async {

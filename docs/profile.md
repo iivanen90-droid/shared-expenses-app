@@ -7,9 +7,9 @@ database upload work in PR #29.
 ## Profile
 
 The existing Profile tab now has its own Cubit, Interactor, Repository and Source
-inside main_shell_feature. Core AuthService exposes a minimal current-session
+inside main_shell_feature. The read-only core AuthSessionSource exposes a minimal current-session
 profile: trimmed `full_name` (falling back to `name`) and email. The SDK session
-remains the source of identity; no second user table or profile cache is created.
+remains the source of identity; no second user table or persisted profile cache is created.
 Session changes refresh the profile, and signed-out snapshots discard identity.
 Missing fields have translated placeholders. Guests can open the existing auth
 route. Profile editing, avatars downloaded from providers, notifications and a

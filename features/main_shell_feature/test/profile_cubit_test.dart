@@ -53,10 +53,33 @@ void main() {
     expect(cubit.state.language, AppLanguage.uk);
   });
   test('a remote session removal immediately clears displayed identity', () async {
-    interactor.updates.add(const Right((session: AuthenticationStatus.signedOut, profile: null)));
+    interactor.updates.add(const Right((session: AuthenticationStatus.signedOut, profile: null, failure: null)));
     await flush();
     expect(cubit.state.profile, isNull);
     expect(cubit.state.session, AuthenticationStatus.signedOut);
+  });
+  test('a session event does not finish logout while cleanup is pending', () async {
+    interactor.pendingLogout = Completer();
+    final operation = cubit.signOut();
+    interactor.updates.add(const Right((session: AuthenticationStatus.signedOut, profile: null, failure: null)));
+    await flush();
+    expect(cubit.state.status, ProfileStatus.signingOut);
+    interactor.pendingLogout!.complete(const Right(unit));
+    await operation;
+    expect(cubit.state.status, ProfileStatus.signedOut);
+  });
+  test('a storage failure still exposes the actual session and identity', () async {
+    interactor.updates.add(
+      Right((
+        session: interactor.current.session,
+        profile: interactor.current.profile,
+        failure: const AuthenticationFailure(AuthenticationFailureKind.storage),
+      )),
+    );
+    await flush();
+    expect(cubit.state.session, AuthenticationStatus.signedIn);
+    expect(cubit.state.profile?.name, 'Test Person');
+    expect(cubit.state.failure, ProfileFailure.loading);
   });
   test('a completion after disposal is ignored', () async {
     interactor.pendingLogout = Completer();
@@ -74,13 +97,13 @@ class _Interactor implements ProfileInteractor {
   int logouts = 0;
   Completer<Either<AuthenticationFailure, Unit>>? pendingLogout;
   @override
-  Stream<Either<AuthenticationFailure, ProfileSnapshot>> watch() async* {
-    yield const Right((
-      session: AuthenticationStatus.signedIn,
-      profile: AuthenticationProfile(name: 'Test Person', email: 'test@example.invalid'),
-    ));
-    yield* updates.stream;
-  }
+  ProfileSnapshot get current => (
+    session: AuthenticationStatus.signedIn,
+    profile: const AuthenticationProfile(name: 'Test Person', email: 'test@example.invalid'),
+    failure: null,
+  );
+  @override
+  Stream<Either<AuthenticationFailure, ProfileSnapshot>> watch() => updates.stream;
 
   @override
   Future<Either<ProfilePreferencesFailure, Unit>> saveLanguage(AppLanguage language) async =>
