@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:6336814861840697651",
-      "lastPropertyId": "5:5326559277615000456",
+      "lastPropertyId": "8:8799233779041696484",
       "name": "HomeGroupRecord",
       "properties": [
         {
@@ -33,6 +33,21 @@
           "id": "5:5326559277615000456",
           "name": "participants",
           "type": 30
+        },
+        {
+          "id": "6:7932969139488077501",
+          "name": "stableId",
+          "type": 9
+        },
+        {
+          "id": "7:7186930330856829581",
+          "name": "ownerId",
+          "type": 9
+        },
+        {
+          "id": "8:8799233779041696484",
+          "name": "remoteState",
+          "type": 9
         }
       ],
       "relations": []

@@ -5,9 +5,12 @@ export 'src/domain/failure/failure.dart';
 export 'src/api_client/api_client.dart';
 export 'src/preferences_storage/preferences_storage.dart' show PreferencesStorage;
 export 'src/database/objectbox_database.dart';
+export 'src/database/remote_database.dart';
 export 'src/analytics/analytics_tracker.dart' show AnalyticsTracker, AnalyticsTrackerFactory;
 export 'src/analytics/crash_reporting_service.dart' show CrashReportingService;
 export 'src/startup/startup_status.dart';
+export 'src/auth/auth_configuration.dart';
+export 'src/auth/auth_service.dart';
 
 export 'package:fpdart/fpdart.dart' show Either, Left, Right, Unit, unit;
 
@@ -16,3 +19,7 @@ export 'src/api_client/dio_client.dart';
 export 'src/api_client/dio_client_configuration.dart';
 
 export 'package:dio/dio.dart' show CancelToken, Interceptor, InterceptorsWrapper;
+
+export 'src/secure_storage/secure_storage.dart';
+
+export 'src/auth/auth_session_source.dart' show AuthSessionSource, AuthSessionStore;

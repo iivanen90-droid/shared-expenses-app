@@ -8,6 +8,9 @@ class HomeGroupRecord {
     required this.emoji,
     required this.currencyCode,
     required this.participants,
+    this.stableId = '',
+    this.ownerId = '',
+    this.remoteState = 'localOnly',
   });
 
   @Id()
@@ -16,4 +19,7 @@ class HomeGroupRecord {
   String emoji;
   String currencyCode;
   List<String> participants;
+  String stableId;
+  String ownerId;
+  String remoteState;
 }

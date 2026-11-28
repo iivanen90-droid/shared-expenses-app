@@ -20,6 +20,7 @@ mixin _$CreateGroupState {
   bool get showValidationErrors;
   CreateGroupStatus get status;
   int? get groupId;
+  GroupRemoteState get remoteState;
 
   /// Create a copy of CreateGroupState
   /// with the given fields replaced by the non-null parameter values.
@@ -40,7 +41,8 @@ mixin _$CreateGroupState {
             (identical(other.showValidationErrors, showValidationErrors) ||
                 other.showValidationErrors == showValidationErrors) &&
             (identical(other.status, status) || other.status == status) &&
-            (identical(other.groupId, groupId) || other.groupId == groupId));
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.remoteState, remoteState) || other.remoteState == remoteState));
   }
 
   @override
@@ -53,11 +55,12 @@ mixin _$CreateGroupState {
     showValidationErrors,
     status,
     groupId,
+    remoteState,
   );
 
   @override
   String toString() {
-    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, showValidationErrors: $showValidationErrors, status: $status, groupId: $groupId)';
+    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, showValidationErrors: $showValidationErrors, status: $status, groupId: $groupId, remoteState: $remoteState)';
   }
 }
 
@@ -74,6 +77,7 @@ abstract mixin class $CreateGroupStateCopyWith<$Res> {
     bool showValidationErrors,
     CreateGroupStatus status,
     int? groupId,
+    GroupRemoteState remoteState,
   });
 }
 
@@ -96,6 +100,7 @@ class _$CreateGroupStateCopyWithImpl<$Res> implements $CreateGroupStateCopyWith<
     Object? showValidationErrors = null,
     Object? status = null,
     Object? groupId = freezed,
+    Object? remoteState = null,
   }) {
     return _then(
       _self.copyWith(
@@ -127,6 +132,10 @@ class _$CreateGroupStateCopyWithImpl<$Res> implements $CreateGroupStateCopyWith<
             ? _self.groupId
             : groupId // ignore: cast_nullable_to_non_nullable
                   as int?,
+        remoteState: null == remoteState
+            ? _self.remoteState
+            : remoteState // ignore: cast_nullable_to_non_nullable
+                  as GroupRemoteState,
       ),
     );
   }
@@ -229,6 +238,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
       bool showValidationErrors,
       CreateGroupStatus status,
       int? groupId,
+      GroupRemoteState remoteState,
     )?
     $default, {
     required TResult orElse(),
@@ -244,6 +254,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
           _that.showValidationErrors,
           _that.status,
           _that.groupId,
+          _that.remoteState,
         );
       case _:
         return orElse();
@@ -273,6 +284,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
       bool showValidationErrors,
       CreateGroupStatus status,
       int? groupId,
+      GroupRemoteState remoteState,
     )
     $default,
   ) {
@@ -287,6 +299,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
           _that.showValidationErrors,
           _that.status,
           _that.groupId,
+          _that.remoteState,
         );
       case _:
         throw StateError('Unexpected subclass');
@@ -315,6 +328,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
       bool showValidationErrors,
       CreateGroupStatus status,
       int? groupId,
+      GroupRemoteState remoteState,
     )?
     $default,
   ) {
@@ -329,6 +343,7 @@ extension CreateGroupStatePatterns on CreateGroupState {
           _that.showValidationErrors,
           _that.status,
           _that.groupId,
+          _that.remoteState,
         );
       case _:
         return null;
@@ -347,6 +362,7 @@ class _CreateGroupState extends CreateGroupState {
     this.showValidationErrors = false,
     this.status = CreateGroupStatus.idle,
     this.groupId,
+    this.remoteState = GroupRemoteState.localOnly,
   }) : super._();
 
   @override
@@ -368,6 +384,9 @@ class _CreateGroupState extends CreateGroupState {
   final CreateGroupStatus status;
   @override
   final int? groupId;
+  @override
+  @JsonKey()
+  final GroupRemoteState remoteState;
 
   /// Create a copy of CreateGroupState
   /// with the given fields replaced by the non-null parameter values.
@@ -389,7 +408,8 @@ class _CreateGroupState extends CreateGroupState {
             (identical(other.showValidationErrors, showValidationErrors) ||
                 other.showValidationErrors == showValidationErrors) &&
             (identical(other.status, status) || other.status == status) &&
-            (identical(other.groupId, groupId) || other.groupId == groupId));
+            (identical(other.groupId, groupId) || other.groupId == groupId) &&
+            (identical(other.remoteState, remoteState) || other.remoteState == remoteState));
   }
 
   @override
@@ -402,11 +422,12 @@ class _CreateGroupState extends CreateGroupState {
     showValidationErrors,
     status,
     groupId,
+    remoteState,
   );
 
   @override
   String toString() {
-    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, showValidationErrors: $showValidationErrors, status: $status, groupId: $groupId)';
+    return 'CreateGroupState(emoji: $emoji, name: $name, currency: $currency, participants: $participants, showValidationErrors: $showValidationErrors, status: $status, groupId: $groupId, remoteState: $remoteState)';
   }
 }
 
@@ -424,6 +445,7 @@ abstract mixin class _$CreateGroupStateCopyWith<$Res> implements $CreateGroupSta
     bool showValidationErrors,
     CreateGroupStatus status,
     int? groupId,
+    GroupRemoteState remoteState,
   });
 }
 
@@ -446,6 +468,7 @@ class __$CreateGroupStateCopyWithImpl<$Res> implements _$CreateGroupStateCopyWit
     Object? showValidationErrors = null,
     Object? status = null,
     Object? groupId = freezed,
+    Object? remoteState = null,
   }) {
     return _then(
       _CreateGroupState(
@@ -477,6 +500,10 @@ class __$CreateGroupStateCopyWithImpl<$Res> implements _$CreateGroupStateCopyWit
             ? _self.groupId
             : groupId // ignore: cast_nullable_to_non_nullable
                   as int?,
+        remoteState: null == remoteState
+            ? _self.remoteState
+            : remoteState // ignore: cast_nullable_to_non_nullable
+                  as GroupRemoteState,
       ),
     );
   }

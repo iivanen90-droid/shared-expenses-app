@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:common/common.dart';
@@ -28,8 +29,23 @@ void main() {
     PlatformDispatcher.instance.onError = originalPlatform;
   });
 
+  test('startup waits for authentication initialization before marking ready', () async {
+    final auth = _StartupAuthService();
+    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter, authService: auth);
+    initializer = current;
+    final initializing = current.initialize();
+    expect(status.isReady, isFalse);
+    auth.complete();
+    await initializing;
+    expect(status.isReady, isTrue);
+  });
+
   test('repeated initialization marks ready without duplicating error reports', () async {
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await Future.wait([current.initialize(), current.initialize()]);
     await current.initialize();
@@ -41,7 +57,11 @@ void main() {
   test('Flutter errors preserve the original error and stack and chain the previous handler', () async {
     var forwarded = false;
     FlutterError.onError = (_) => forwarded = true;
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     final error = StateError('Framework error');
@@ -54,7 +74,11 @@ void main() {
   });
 
   test('unhandled root-isolate errors are reported as fatal and marked handled', () async {
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     final error = StateError('Async error');
@@ -71,7 +95,11 @@ void main() {
       forwarded = true;
       return false;
     };
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     expect(PlatformDispatcher.instance.onError?.call(StateError('Error'), StackTrace.empty), isFalse);
@@ -81,7 +109,11 @@ void main() {
 
   test('reporter failures do not recursively throw from the platform handler', () async {
     reporter.fail = true;
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     expect(PlatformDispatcher.instance.onError?.call(StateError('Error'), StackTrace.empty), isFalse);
@@ -102,7 +134,11 @@ void main() {
   });
 
   test('cleanup does not overwrite a handler installed later by another owner', () async {
-    final current = ApplicationInitializerImpl(startupStatus: status, crashReporting: reporter);
+    final current = ApplicationInitializerImpl(
+      startupStatus: status,
+      crashReporting: reporter,
+      authService: _StartupAuthService()..complete(),
+    );
     initializer = current;
     await current.initialize();
     void laterFlutter(FlutterErrorDetails details) {}
@@ -130,4 +166,15 @@ final class _Reporter implements CrashReportingService {
     if (fail) throw StateError('Reporter failed');
     errors.add(_RecordedError(error, stackTrace, fatal));
   }
+}
+
+class _StartupAuthService implements AuthService {
+  final _ready = Completer<void>();
+  void complete() => _ready.complete();
+  @override
+  Future<void> initialize() => _ready.future;
+  @override
+  Future<Either<AuthenticationFailure, Unit>> launchSignIn({required AuthSource source}) async => const Right(unit);
+  @override
+  Future<Either<AuthenticationFailure, Unit>> signOut() async => const Right(unit);
 }

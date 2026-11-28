@@ -21,7 +21,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 6336814861840697651),
     name: 'HomeGroupRecord',
-    lastPropertyId: const obx_int.IdUid(5, 5326559277615000456),
+    lastPropertyId: const obx_int.IdUid(8, 8799233779041696484),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(id: const obx_int.IdUid(1, 6004446118698529974), name: 'id', type: 6, flags: 1),
@@ -29,6 +29,9 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(id: const obx_int.IdUid(3, 3646644420522250777), name: 'emoji', type: 9, flags: 0),
       obx_int.ModelProperty(id: const obx_int.IdUid(4, 2075749764739989478), name: 'currencyCode', type: 9, flags: 0),
       obx_int.ModelProperty(id: const obx_int.IdUid(5, 5326559277615000456), name: 'participants', type: 30, flags: 0),
+      obx_int.ModelProperty(id: const obx_int.IdUid(6, 7932969139488077501), name: 'stableId', type: 9, flags: 0),
+      obx_int.ModelProperty(id: const obx_int.IdUid(7, 7186930330856829581), name: 'ownerId', type: 9, flags: 0),
+      obx_int.ModelProperty(id: const obx_int.IdUid(8, 8799233779041696484), name: 'remoteState', type: 9, flags: 0),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -105,12 +108,18 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final emojiOffset = fbb.writeString(object.emoji);
         final currencyCodeOffset = fbb.writeString(object.currencyCode);
         final participantsOffset = fbb.writeList(object.participants.map(fbb.writeString).toList(growable: false));
-        fbb.startTable(6);
+        final stableIdOffset = fbb.writeString(object.stableId);
+        final ownerIdOffset = fbb.writeString(object.ownerId);
+        final remoteStateOffset = fbb.writeString(object.remoteState);
+        fbb.startTable(9);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, nameOffset);
         fbb.addOffset(2, emojiOffset);
         fbb.addOffset(3, currencyCodeOffset);
         fbb.addOffset(4, participantsOffset);
+        fbb.addOffset(5, stableIdOffset);
+        fbb.addOffset(6, ownerIdOffset);
+        fbb.addOffset(7, remoteStateOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -125,12 +134,18 @@ obx_int.ModelDefinition getObjectBoxModel() {
           fb.StringReader(asciiOptimization: true),
           lazy: false,
         ).vTableGet(buffer, rootOffset, 12, []);
+        final stableIdParam = const fb.StringReader(asciiOptimization: true).vTableGet(buffer, rootOffset, 14, '');
+        final ownerIdParam = const fb.StringReader(asciiOptimization: true).vTableGet(buffer, rootOffset, 16, '');
+        final remoteStateParam = const fb.StringReader(asciiOptimization: true).vTableGet(buffer, rootOffset, 18, '');
         final object = HomeGroupRecord(
           id: idParam,
           name: nameParam,
           emoji: emojiParam,
           currencyCode: currencyCodeParam,
           participants: participantsParam,
+          stableId: stableIdParam,
+          ownerId: ownerIdParam,
+          remoteState: remoteStateParam,
         );
 
         return object;
@@ -157,4 +172,13 @@ class HomeGroupRecord_ {
 
   /// See [HomeGroupRecord.participants].
   static final participants = obx.QueryStringVectorProperty<HomeGroupRecord>(_entities[0].properties[4]);
+
+  /// See [HomeGroupRecord.stableId].
+  static final stableId = obx.QueryStringProperty<HomeGroupRecord>(_entities[0].properties[5]);
+
+  /// See [HomeGroupRecord.ownerId].
+  static final ownerId = obx.QueryStringProperty<HomeGroupRecord>(_entities[0].properties[6]);
+
+  /// See [HomeGroupRecord.remoteState].
+  static final remoteState = obx.QueryStringProperty<HomeGroupRecord>(_entities[0].properties[7]);
 }

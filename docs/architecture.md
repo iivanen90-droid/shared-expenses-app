@@ -16,7 +16,8 @@ Each member uses `resolution: workspace`, `publish_to: 'none'`, and its own `lib
 | `packages/common/` | DI composition, ApplicationInitializer, SafeCubitWrapper, Ukrainian/English localization |
 | `packages/router/` | Typed splash/tab routes, separate Navigators, navigation extensions |
 | `features/splash_feature/` | Readiness checks, loading/loaded/failed, retry after failure, transition to home |
-| `features/main_shell_feature/` | Home/Profile tab shell, blank Profile page, data/domain/ui resolvers |
+| `features/main_shell_feature/` | Home/Profile tab shell, optional account entry and sign-out, data/domain/ui resolvers |
+| `features/auth_feature/` | Independent Google sign-in page, final attempt result, and cancellation |
 | `features/home_feature/` | Existing home screen, state, and opened event; no financial features |
 | `envs/` | Safe dev/prod examples; private configurations are ignored by Git |
 | `tools/` | Workspace commands, codegen, localization, formatting, analysis, and tests |
@@ -127,6 +128,12 @@ Add DTO/json_serializable and business modules with the first agreed scenario th
 
 ## Local database: ObjectBox
 
+Supabase online database access uses the core `RemoteDatabase` interface and the
+same client/session initialized by auth. Home retains table names, payload mapping
+and upload decisions in its feature data layer. ObjectBox remains the UI's local
+source. See [database setup and offline findings](supabase-database.md) for atomic
+initial uploads, stable UUIDs, owner-only RLS, failure states and deferred sync work.
+
 Core exports ObjectBoxDatabase. The mobile package supplies the native Flutter libraries. The
 application owns one store per database directory and opens it with the schema owner's generated
 opener. Startup does not open a database until a feature provides a schema and wires the lifecycle.
@@ -228,7 +235,7 @@ The confirmation action and the Home list open the group placeholder by its stor
 route replaces the confirmation and retains Home beneath it for Back.
 The [currency catalog](currency-catalog.md) is bundled offline. The join action opens the typed /home/join route above the tab shell.
 The join Cubit enables submission for nonblank input and shows a local notice on submit. Profile at /profile
-is a blank placeholder.
+opens the independent authentication screen.
 State is not restored after process termination.
 
 buildPlatformPage returns Flutter SDK MaterialPage on Android and CupertinoPage on iOS as in the guide.

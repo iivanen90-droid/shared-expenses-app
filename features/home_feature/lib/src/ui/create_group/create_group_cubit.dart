@@ -54,7 +54,8 @@ final class CreateGroupCubit extends SafeCubitWrapper<CreateGroupState> {
     ));
     result.match(
       (_) => emit(draft.copyWith(status: CreateGroupStatus.failed)),
-      (saved) => emit(draft.copyWith(status: CreateGroupStatus.created, groupId: saved.id)),
+      (saved) =>
+          emit(draft.copyWith(status: CreateGroupStatus.created, groupId: saved.id, remoteState: saved.remoteState)),
     );
   }
 }
