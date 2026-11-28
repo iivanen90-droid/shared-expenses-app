@@ -4,6 +4,9 @@ import 'package:main_shell_feature/src/domain/repository/profile_account_reposit
 
 abstract interface class MainShellDataDependencyModuleResolver {
   static void register() => DependencyProvider.registerLazySingleton<ProfileAccountRepository>(
-    () => ProfileAccountRepositoryImpl(service: DependencyProvider.get<AuthService>()),
+    () => ProfileAccountRepositoryImpl(
+      service: DependencyProvider.get<AuthService>(),
+      sessions: DependencyProvider.get<AuthSessionSource>(),
+    ),
   );
 }

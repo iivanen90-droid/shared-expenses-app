@@ -74,20 +74,25 @@ publishable keys are client configuration, not server authorization boundaries.
 
 ## Ownership and screen lifecycle
 
-AuthCubit uses initial/loading/cancelling/error/authenticated states and has no stream
-subscription or independent busy flag. AuthInteractor owns one attempt per screen:
-it subscribes to non-replayed service changes before launching the browser and returns
-one Future containing the final result, not merely launch success. Repository delegates
-SDK access; core retains transport-specific callback queues and safe persistence.
-The interactor ignores session updates while cancelling, waits for an in-flight browser
-launch, then invokes core cleanup. Closing the page cancels an unfinished attempt.
-Profile separately observes application session changes and owns sign-out; it preserves
-busy status until cleanup actually completes. Successful logout opens a fresh auth route.
+AuthCubit uses initial/loading/cancelling/error/authenticated states without a stream
+subscription or independent busy flag. It calls `AuthInteractor.signIn(source: AuthSource.google)`
+and awaits one final result. Interactor delegates only `signIn` and `signOut`.
+The command Repository exposes exactly those two methods. Its implementation subscribes
+before opening the browser, combines launch and confirmation into one Future, and cancels
+its temporary subscription when that operation finishes. Account reads use a separate
+`AuthSessionSource` -> `AuthSessionRepository` -> `AuthSessionInteractor` path.
+Profile observes the shared read-only account state independently and owns normal logout.
 
-SecureStorage is the reusable encrypted key/value interface; SecureStorageImpl wraps
-flutter_secure_storage. SecureAuthStorage adapts it to Supabase session/PKCE APIs and
-retains environment/project namespacing, ordered writes and per-key failure tracking.
-SDK/plugin failures are normalized in core as Either failures, not raw UI stream errors.
+`AuthSessionStore` publishes one atomic `(session, failure)` snapshot per update.
+Consumers read `current` when opening, then observe future changes; stale errors are not
+replayed into new sign-in attempts. A persistence error includes the actual session, so
+an already authenticated account remains available for cleanup.
+
+`SecureStorageImpl` owns encryption delegation, ordered writes, sanitized failures, and
+per-key failure tracking. `flush()` waits for SDK fire-and-forget writes and reports failed
+keys until those keys are successfully rewritten or deleted. `SupabaseStorageAdapter`
+only maps the SDK-required LocalStorage/GotrueAsyncStorage methods onto this interface
+and adds project/environment key prefixes. Existing key names remain unchanged.
 
 ## Session lifecycle and privacy
 
@@ -134,43 +139,24 @@ Sources [Supabase Google setup](https://supabase.com/docs/guides/auth/social-sig
 
 The locked SDK (`supabase_flutter` 2.18.3) launches OAuth with a `Future<bool>`;
 it reports the confirmed session separately through `onAuthStateChange`.
-See the [OAuth reference](https://supabase.com/docs/reference/dart/auth-signinwithoauth)
-and [auth events](https://supabase.com/docs/reference/dart/auth-onauthstatechange).
 A successful browser launch is therefore not a final sign-in result.
+`AuthService.launchSignIn(source: ...)` explicitly names that technical SDK action.
+Feature callers use `AuthRepository.signIn(source: ...)`, which waits for confirmation.
+Only Google is implemented; the source parameter does not enable Apple or other providers.
 
-`AuthInteractor.signInWithGoogle()` returns one shared **operation** Future to all
-callers. A received SDK result is a separate internal signal. Cancellation and
-page disposal must still clear the session if that signal arrived while the
-browser-launch Future was pending. Cleanup failure wins over an earlier success;
-successful cancellation returns cancelled to every caller. No second provider
-or generic provider parameter is introduced in this refactor.
+The Interactor has no attempt object, subscription, cancellation state, or disposal logic.
+There is no `_PendingSignIn` class. The Repository tracks one active operation, its browser
+launch, confirmation, and cleanup. Repeated callers share the same operation Future.
+Cancellation waits for launch and cleanup even if a successful SDK event arrived earlier;
+a cleanup failure takes precedence over success. Closing a busy Cubit calls the same
+signOut command and prevents late UI emissions.
 
-The small `_PendingSignIn` object holds only the event result, browser launch,
-shared operation and optional cleanup Future. There is no independently mutable
-cancelling flag: cancellation is derived from the cleanup Future. The object
-exists because these asynchronous steps have different completion boundaries;
-removing it by spreading the same fields over the Interactor would not simplify
-the protocol.
+Core retains transport-specific callback serialization because an in-flight PKCE exchange
+can install a session after sign-out. Cleanup drains that exchange before removing its
+session and reporting success. This is separate from coordinating the screen command.
+The SDK storage adapter remains because the SDK invokes its session/verifier hooks itself;
+it contains no separate encrypted-storage engine or write queue.
 
-`AuthService.snapshot` reads the current session and safe persistence failure.
-`watchStatus()` now publishes **future changes only**: the custom replay stream
-and its boolean mode were removed. Auth initializes from snapshot; Profile reads
-snapshot and observes future changes. Old errors are not replayed into a new
-sign-in attempt. The service derives session presence directly from the SDK,
-without a second mutable status field. Failure notifications use one emission
-path, including failed logout cleanup.
-
-`SecureAuthStorage` is retained as the SDK-required `LocalStorage` and
-`GotrueAsyncStorage` adapter, not as another encrypted-storage implementation.
-The locked SDK calls `persistSession`/`removePersistedSession` itself during auth
-events; a Repository that writes SecureStorage manually would not replace those
-hooks. The adapter delegates encryption to SecureStorage, namespaces keys by
-project/environment, serializes writes, and remembers failed keys. Removing
-these guarantees would regress late-refresh/logout and storage-failure tests.
-The callback queue also remains: the SDK's in-flight code exchange can install
-a session after sign-out, so cleanup drains the exchange before reporting success.
-
-Regression tests cover early signed-in events followed by cancellation/disposal,
-duplicate callers waiting on the same operation, and failure to clear an already
-active session. SDK tests retain real fake-transport session restore, late PKCE
-exchange, safe storage failures, and offline cleanup coverage.
+Regression tests cover early signed-in events followed by cancellation or actual Cubit
+closure, duplicate callers, failed cleanup, atomic session/storage-error delivery, encrypted
+key compatibility, delayed writes, session restoration, and offline cleanup.

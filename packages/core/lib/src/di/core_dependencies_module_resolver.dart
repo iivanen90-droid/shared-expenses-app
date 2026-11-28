@@ -9,12 +9,21 @@ import 'package:core/src/startup/startup_status.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:core/src/auth/auth_configuration.dart';
 import 'package:core/src/auth/auth_service.dart';
+import 'package:core/src/auth/auth_session_source.dart';
+import 'package:core/src/secure_storage/secure_storage.dart';
 import 'package:core/src/auth/supabase_auth_service.dart';
 
 abstract interface class CoreDependenciesModuleResolver {
   static void register({required EnvironmentType environment}) {
+    DependencyProvider.registerLazySingleton<SecureStorage>(SecureStorageImpl.new);
+    DependencyProvider.registerLazySingleton<AuthSessionStore>(AuthSessionStore.new);
+    DependencyProvider.registerLazySingleton<AuthSessionSource>(() => DependencyProvider.get<AuthSessionStore>());
     DependencyProvider.registerLazySingleton<AuthService>(
-      () => SupabaseAuthService(configuration: AuthConfiguration.fromDefines(environment)),
+      () => SupabaseAuthService(
+        configuration: AuthConfiguration.fromDefines(environment),
+        storage: DependencyProvider.get<SecureStorage>(),
+        session: DependencyProvider.get<AuthSessionStore>(),
+      ),
       dispose: (service) {
         if (service is SupabaseAuthService) return service.dispose();
       },

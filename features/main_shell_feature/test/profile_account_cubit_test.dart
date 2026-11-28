@@ -22,14 +22,14 @@ void main() {
   test('Profile follows session changes while mounted', () async {
     expect(cubit.state.session, AuthenticationStatus.signedIn);
     interactor.current = (session: AuthenticationStatus.signedOut, failure: null);
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
+    interactor.updates.add(interactor.current);
     await flush();
     expect(cubit.state.session, AuthenticationStatus.signedOut);
   });
   test('a session event does not unblock a pending logout', () async {
     final operation = cubit.signOut();
     interactor.current = (session: AuthenticationStatus.signedOut, failure: null);
-    interactor.updates.add(const Right(AuthenticationStatus.signedOut));
+    interactor.updates.add(interactor.current);
     await flush();
     expect(cubit.state.status, ProfileAccountStatus.signingOut);
     await cubit.signOut();
@@ -64,13 +64,13 @@ void main() {
 
 class _Interactor implements ProfileAccountInteractor {
   AuthenticationSnapshot current = (session: AuthenticationStatus.signedIn, failure: null);
-  final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
+  final updates = StreamController<AuthenticationSnapshot>.broadcast();
   Completer<Either<AuthenticationFailure, Unit>> result = Completer();
   int signOuts = 0;
   @override
   AuthenticationSnapshot get snapshot => current;
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => updates.stream;
+  Stream<AuthenticationSnapshot> watchStatus() => updates.stream;
   @override
   Future<Either<AuthenticationFailure, Unit>> signOut() {
     signOuts++;
