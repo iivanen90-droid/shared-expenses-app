@@ -743,15 +743,7 @@ class _AuthService implements AuthService {
   }
 
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus({bool replay = true}) {
-    if (!replay) return updates.stream;
-    return Stream.multi((listener) {
-      final subscription = updates.stream.listen(listener.add, onDone: listener.close);
-      listener.add(Right(_session));
-      if (_failure case final failure?) listener.add(Left(failure));
-      listener.onCancel = subscription.cancel;
-    });
-  }
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => updates.stream;
 
   @override
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {

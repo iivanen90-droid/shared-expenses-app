@@ -12,15 +12,15 @@ final class SupabaseAuthService implements AuthService {
 
   final AuthConfiguration _configuration;
   final _updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
-  AuthenticationStatus _status = AuthenticationStatus.unconfigured;
   AuthenticationFailure? _failure;
   Supabase? _supabase;
   SecureAuthStorage? _storage;
-  StreamSubscription<AuthState>? _subscription;
+  StreamSubscription<AuthState>? _sessionSubscription;
   final Stream<Uri>? _callbackLinks;
   StreamSubscription<Uri>? _linkSubscription;
   Future<void>? _initialization;
-  Future<void> _eventQueue = Future.value();
+  // SDK notifications wait for storage; callback exchanges are drained before sign-out.
+  Future<void> _sessionNotifications = Future.value();
   Future<void> _callbackQueue = Future.value();
   Future<Either<AuthenticationFailure, Unit>>? _signOutOperation;
   bool _acceptCallbacks = true;
@@ -59,9 +59,8 @@ final class SupabaseAuthService implements AuthService {
       if (storage.writeFailed) {
         _failure = const AuthenticationFailure(AuthenticationFailureKind.storage);
       }
-      _status = _sessionStatus;
-      _subscription = _supabase!.client.auth.onAuthStateChange.listen((_) {
-        _eventQueue = _eventQueue.then((_) async {
+      _sessionSubscription = _supabase!.client.auth.onAuthStateChange.listen((_) {
+        _sessionNotifications = _sessionNotifications.then((_) async {
           await storage.pending;
           if (!_acceptCallbacks && _supabase?.client.auth.currentSession != null) return;
           if (storage.writeFailed) {
@@ -69,8 +68,7 @@ final class SupabaseAuthService implements AuthService {
             return;
           }
           _failure = null;
-          _status = _sessionStatus;
-          _updates.add(Right(_status));
+          _updates.add(Right(_sessionStatus));
         });
       }, onError: (Object error, StackTrace stack) => _publishFailure(_mapFailure(error)));
       _linkSubscription = (_callbackLinks ?? AppLinks().uriLinkStream).listen(
@@ -96,6 +94,7 @@ final class SupabaseAuthService implements AuthService {
 
   AuthenticationStatus get _sessionStatus {
     // A saved identity must remain removable even when its token needs refresh.
+    if (_supabase == null) return AuthenticationStatus.unconfigured;
     return _supabase?.client.auth.currentSession == null
         ? AuthenticationStatus.signedOut
         : AuthenticationStatus.signedIn;
@@ -110,28 +109,18 @@ final class SupabaseAuthService implements AuthService {
   }
 
   void _publishFailure(AuthenticationFailure failure) {
-    if (_supabase != null && _signOutOperation == null) {
-      _status = _sessionStatus;
-      _updates.add(Right(_status));
-    }
     _failure = failure;
+    if (_supabase != null) {
+      _updates.add(Right(_sessionStatus));
+    }
     _updates.add(Left(failure));
   }
 
   @override
-  AuthenticationSnapshot get snapshot => (session: _supabase == null ? _status : _sessionStatus, failure: _failure);
+  AuthenticationSnapshot get snapshot => (session: _sessionStatus, failure: _failure);
 
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus({bool replay = true}) {
-    if (!replay) return _updates.stream;
-    return Stream.multi((listener) {
-      final subscription = _updates.stream.listen(listener.add, onDone: listener.close);
-      final current = snapshot;
-      listener.add(Right(current.session));
-      if (current.failure case final failure?) listener.add(Left(failure));
-      listener.onCancel = subscription.cancel;
-    });
-  }
+  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => _updates.stream;
 
   @override
   Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {
@@ -176,8 +165,6 @@ final class SupabaseAuthService implements AuthService {
         return const Right(unit);
       }
       final failure = _mapFailure(error);
-      _status = _sessionStatus;
-      _updates.add(Right(_status));
       _publishFailure(failure);
       return Left(failure);
     }
@@ -190,8 +177,8 @@ final class SupabaseAuthService implements AuthService {
     await _linkSubscription?.cancel();
     await _callbackQueue;
     await _signOutOperation;
-    await _subscription?.cancel();
-    await _eventQueue;
+    await _sessionSubscription?.cancel();
+    await _sessionNotifications;
     await _storage?.pending;
     await _supabase?.dispose();
     await _updates.close();
