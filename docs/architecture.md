@@ -16,7 +16,8 @@ Each member uses `resolution: workspace`, `publish_to: 'none'`, and its own `lib
 | `packages/common/` | DI composition, ApplicationInitializer, SafeCubitWrapper, Ukrainian/English localization |
 | `packages/router/` | Typed splash/tab routes, separate Navigators, navigation extensions |
 | `features/splash_feature/` | Readiness checks, loading/loaded/failed, retry after failure, transition to home |
-| `features/main_shell_feature/` | Home/Profile tab shell, blank Profile page, data/domain/ui resolvers |
+| `features/main_shell_feature/` | Home/Profile tab shell, optional account entry and sign-out, data/domain/ui resolvers |
+| `features/auth_feature/` | Independent Google sign-in page, final attempt result, and cancellation |
 | `features/home_feature/` | Existing home screen, state, and opened event; no financial features |
 | `envs/` | Safe dev/prod examples; private configurations are ignored by Git |
 | `tools/` | Workspace commands, codegen, localization, formatting, analysis, and tests |
@@ -228,7 +229,7 @@ The confirmation action and the Home list open the group placeholder by its stor
 route replaces the confirmation and retains Home beneath it for Back.
 The [currency catalog](currency-catalog.md) is bundled offline. The join action opens the typed /home/join route above the tab shell.
 The join Cubit enables submission for nonblank input and shows a local notice on submit. Profile at /profile
-is a blank placeholder.
+opens the independent authentication screen.
 State is not restored after process termination.
 
 buildPlatformPage returns Flutter SDK MaterialPage on Android and CupertinoPage on iOS as in the guide.
