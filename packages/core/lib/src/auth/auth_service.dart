@@ -14,13 +14,11 @@ final class AuthenticationFailure extends Failure implements Exception {
 
 typedef AuthenticationSnapshot = ({AuthenticationStatus session, AuthenticationFailure? failure});
 
-abstract interface class AuthService {
-  /// Current session and persistence failure; reading it does not start a subscription.
-  AuthenticationSnapshot get snapshot;
-  Future<void> initialize();
+enum AuthSource { google }
 
-  /// Future changes only. Read snapshot when opening a page; old failures are not replayed.
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus();
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle();
+/// SDK commands. launchSignIn opens the provider; the session source confirms sign-in.
+abstract interface class AuthService {
+  Future<void> initialize();
+  Future<Either<AuthenticationFailure, Unit>> launchSignIn({required AuthSource source});
   Future<Either<AuthenticationFailure, Unit>> signOut();
 }

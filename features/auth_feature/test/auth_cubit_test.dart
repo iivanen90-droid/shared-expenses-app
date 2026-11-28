@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:auth_feature/src/domain/interactor/auth_interactor.dart';
+import 'package:auth_feature/src/domain/interactor/auth_session_interactor.dart';
 import 'package:auth_feature/src/ui/auth/auth_cubit.dart';
 import 'package:auth_feature/src/ui/auth/auth_state.dart';
 import 'package:core/core.dart';
@@ -11,7 +12,7 @@ void main() {
   late AuthCubit cubit;
   setUp(() {
     interactor = _Interactor();
-    cubit = AuthCubit(interactor: interactor)..initialize();
+    cubit = AuthCubit(interactor: interactor, sessions: interactor)..initialize();
   });
   tearDown(() => cubit.close());
 
@@ -66,34 +67,26 @@ void main() {
     await cubit.close();
     await operation;
     expect(cubit.isClosed, isTrue);
-    expect(interactor.disposed, isTrue);
+    expect(interactor.cancellations, 1);
   });
 }
 
-class _Interactor implements AuthInteractor {
+class _Interactor implements AuthInteractor, AuthSessionInteractor {
+  @override
   AuthenticationSnapshot current = (session: AuthenticationStatus.signedOut, failure: null);
   final result = Completer<Either<AuthenticationFailure, Unit>>();
   int launches = 0;
   int cancellations = 0;
-  bool disposed = false;
   @override
-  AuthenticationSnapshot get snapshot => current;
-  @override
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() {
+  Future<Either<AuthenticationFailure, Unit>> signIn({required AuthSource source}) {
     launches++;
     return result.future;
   }
 
   @override
-  Future<Either<AuthenticationFailure, Unit>> cancelSignIn() async {
+  Future<Either<AuthenticationFailure, Unit>> signOut() async {
     cancellations++;
     if (!result.isCompleted) result.complete(const Left(AuthenticationFailure(AuthenticationFailureKind.cancelled)));
     return const Right(unit);
-  }
-
-  @override
-  Future<void> dispose() async {
-    disposed = true;
-    if (!result.isCompleted) await cancelSignIn();
   }
 }

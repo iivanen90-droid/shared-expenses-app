@@ -3,18 +3,28 @@ import 'dart:async';
 import 'package:app_links/app_links.dart';
 import 'package:core/src/auth/auth_configuration.dart';
 import 'package:core/src/auth/auth_service.dart';
-import 'package:core/src/auth/secure_auth_storage.dart';
+import 'package:core/src/auth/auth_session_source.dart';
+import 'package:core/src/secure_storage/secure_storage.dart';
+import 'package:core/src/auth/supabase_storage_adapter.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 final class SupabaseAuthService implements AuthService {
-  SupabaseAuthService({required this._configuration, this._storage, this._callbackLinks});
+  SupabaseAuthService({
+    required this._configuration,
+    SecureStorage? storage,
+    AuthSessionStore? session,
+    this._callbackLinks,
+  }) : _storage = storage ?? SecureStorageImpl(),
+       _session = session ?? AuthSessionStore();
+  final SecureStorage _storage;
+  final AuthSessionStore _session;
+  AuthSessionSource get sessionSource => _session;
+  String get _storageNamespace =>
+      'shared-expenses:${_configuration.environment.name}:${Uri.parse(_configuration.url).host}';
 
   final AuthConfiguration _configuration;
-  final _updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
-  AuthenticationFailure? _failure;
   Supabase? _supabase;
-  SecureAuthStorage? _storage;
   StreamSubscription<AuthState>? _sessionSubscription;
   final Stream<Uri>? _callbackLinks;
   StreamSubscription<Uri>? _linkSubscription;
@@ -35,15 +45,10 @@ final class SupabaseAuthService implements AuthService {
   Future<void> _initialize() async {
     if (_configuration.isEmpty) return;
     if (!_configuration.isValid) {
-      _failure = const AuthenticationFailure(AuthenticationFailureKind.configuration);
+      _publishFailure(const AuthenticationFailure(AuthenticationFailureKind.configuration));
       return;
     }
-    final storage =
-        _storage ??
-        SecureAuthStorage(
-          namespace: 'shared-expenses:${_configuration.environment.name}:${Uri.parse(_configuration.url).host}',
-        );
-    _storage = storage;
+    final storage = SupabaseStorageAdapter(namespace: _storageNamespace, storage: _storage);
     try {
       // Fail before the SDK creates its global instance if secure storage is unreadable.
       await storage.accessToken();
@@ -58,28 +63,26 @@ final class SupabaseAuthService implements AuthService {
           detectSessionInUri: false,
         ),
       );
-      await storage.pending;
-      if (storage.writeFailed) {
-        _failure = const AuthenticationFailure(AuthenticationFailureKind.storage);
-      }
+      await _publishStoredSession();
       _sessionSubscription = _supabase!.client.auth.onAuthStateChange.listen((_) {
-        _sessionNotifications = _sessionNotifications.then((_) async {
-          await storage.pending;
-          if (!_acceptCallbacks && _supabase?.client.auth.currentSession != null) return;
-          if (storage.writeFailed) {
-            _publishFailure(const AuthenticationFailure(AuthenticationFailureKind.storage));
-            return;
-          }
-          _failure = null;
-          _updates.add(Right(_sessionStatus));
-        });
+        _sessionNotifications = _sessionNotifications.then((_) => _publishStoredSession());
       }, onError: (Object error, StackTrace stack) => _publishFailure(_mapFailure(error)));
       _linkSubscription = (_callbackLinks ?? AppLinks().uriLinkStream).listen(
         _handleCallback,
         onError: (Object error, StackTrace stack) => _publishFailure(_mapFailure(error)),
       );
     } on Object catch (error) {
-      _failure = _mapFailure(error);
+      _publishFailure(_mapFailure(error));
+    }
+  }
+
+  Future<void> _publishStoredSession() async {
+    try {
+      await _storage.flush();
+      if (!_acceptCallbacks && _sessionStatus == AuthenticationStatus.signedIn) return;
+      _session.update(_sessionStatus);
+    } on SecureStorageFailure {
+      _publishFailure(const AuthenticationFailure(AuthenticationFailureKind.storage));
     }
   }
 
@@ -105,37 +108,28 @@ final class SupabaseAuthService implements AuthService {
 
   AuthenticationFailure _mapFailure(Object error) {
     if (error is AuthenticationFailure) return error;
+    if (error is SecureStorageFailure) return const AuthenticationFailure(AuthenticationFailureKind.storage);
     if (error is AuthException && (error.code == 'access_denied' || error.code == 'user_cancelled')) {
       return const AuthenticationFailure(AuthenticationFailureKind.cancelled);
     }
     return const AuthenticationFailure(AuthenticationFailureKind.connection);
   }
 
-  void _publishFailure(AuthenticationFailure failure) {
-    _failure = failure;
-    if (_supabase != null) {
-      _updates.add(Right(_sessionStatus));
-    }
-    _updates.add(Left(failure));
-  }
+  void _publishFailure(AuthenticationFailure failure) => _session.update(_sessionStatus, failure: failure);
 
   @override
-  AuthenticationSnapshot get snapshot => (session: _sessionStatus, failure: _failure);
-
-  @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => _updates.stream;
-
-  @override
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {
+  Future<Either<AuthenticationFailure, Unit>> launchSignIn({required AuthSource source}) async {
     final supabase = _supabase;
     if (supabase == null) return const Left(AuthenticationFailure(AuthenticationFailureKind.configuration));
     try {
       await _signOutOperation;
       await _callbackQueue;
       _acceptCallbacks = true;
-      _failure = null;
+      _session.update(_sessionStatus);
       final launched = await supabase.client.auth.signInWithOAuth(
-        OAuthProvider.google,
+        switch (source) {
+          AuthSource.google => OAuthProvider.google,
+        },
         redirectTo: _configuration.redirectUrl,
         authScreenLaunchMode: LaunchMode.externalApplication,
         queryParams: const {'prompt': 'select_account'},
@@ -159,13 +153,21 @@ final class SupabaseAuthService implements AuthService {
       // suppress its UI events, then clear the resulting session before success.
       await _callbackQueue;
       // Clear the saved session before reporting success, including when offline.
-      await _storage!.removePersistedSession();
+      await _storage.delete('$_storageNamespace:session');
       await supabase.client.auth.signOut(scope: SignOutScope.local);
+      await _storage.flush();
+      _session.update(_sessionStatus);
       return const Right(unit);
     } on Object catch (error) {
       // The SDK clears local auth before attempting remote token revocation.
-      if (supabase.client.auth.currentSession == null && _storage?.writeFailed == false) {
-        return const Right(unit);
+      if (supabase.client.auth.currentSession == null) {
+        try {
+          await _storage.flush();
+          _session.update(_sessionStatus);
+          return const Right(unit);
+        } on SecureStorageFailure {
+          /* Report failed persistence below. */
+        }
       }
       final failure = _mapFailure(error);
       _publishFailure(failure);
@@ -182,8 +184,8 @@ final class SupabaseAuthService implements AuthService {
     await _signOutOperation;
     await _sessionSubscription?.cancel();
     await _sessionNotifications;
-    await _storage?.pending;
+    await _storage.flush().catchError((Object _) {});
     await _supabase?.dispose();
-    await _updates.close();
+    await _session.close();
   }
 }

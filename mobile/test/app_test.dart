@@ -656,6 +656,8 @@ Future<void> _withApp(
     if (authService != null) {
       await GetIt.instance.unregister<AuthService>();
       DependencyProvider.registerLazySingleton<AuthService>(() => authService);
+      await GetIt.instance.unregister<AuthSessionSource>();
+      DependencyProvider.registerLazySingleton<AuthSessionSource>(() => authService as AuthSessionSource);
     }
     await GetIt.instance.unregister<HomeGroupsRepository>();
     DependencyProvider.registerLazySingleton<HomeGroupsRepository>(() => groups, dispose: (_) => groups.close());
@@ -764,14 +766,14 @@ class _BlockingInitializer implements ApplicationInitializer {
   }
 }
 
-class _AuthService implements AuthService {
+class _AuthService implements AuthService, AuthSessionSource {
   _AuthService({this.initialStatus = AuthenticationStatus.signedOut});
   final AuthenticationStatus initialStatus;
   late AuthenticationStatus _session = initialStatus;
   AuthenticationFailure? _failure;
   @override
-  AuthenticationSnapshot get snapshot => (session: _session, failure: _failure);
-  final updates = StreamController<Either<AuthenticationFailure, AuthenticationStatus>>.broadcast();
+  AuthenticationSnapshot get current => (session: _session, failure: _failure);
+  final updates = StreamController<AuthenticationSnapshot>.broadcast();
   int launches = 0;
   int signOuts = 0;
 
@@ -781,15 +783,14 @@ class _AuthService implements AuthService {
   void emitSession(AuthenticationStatus session, {AuthenticationFailure? failure}) {
     _session = session;
     _failure = failure;
-    updates.add(Right(session));
-    if (failure != null) updates.add(Left(failure));
+    updates.add(current);
   }
 
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => updates.stream;
+  Stream<AuthenticationSnapshot> watchChanges() => updates.stream;
 
   @override
-  Future<Either<AuthenticationFailure, Unit>> signInWithGoogle() async {
+  Future<Either<AuthenticationFailure, Unit>> launchSignIn({required AuthSource source}) async {
     launches++;
     _failure = null;
     return const Right(unit);
@@ -802,7 +803,7 @@ class _AuthService implements AuthService {
     if (failSignOut) {
       const failure = AuthenticationFailure(AuthenticationFailureKind.storage);
       _failure = failure;
-      updates.add(const Left(failure));
+      updates.add(current);
       return const Left(failure);
     }
     emitSession(AuthenticationStatus.signedOut);

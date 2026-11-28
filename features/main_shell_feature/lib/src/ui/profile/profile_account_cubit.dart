@@ -8,13 +8,11 @@ import 'package:main_shell_feature/src/ui/profile/profile_account_state.dart';
 final class ProfileAccountCubit extends SafeCubitWrapper<ProfileAccountState> {
   ProfileAccountCubit({required this._interactor}) : super(const ProfileAccountState());
   final ProfileAccountInteractor _interactor;
-  StreamSubscription<Either<AuthenticationFailure, AuthenticationStatus>>? _subscription;
+  StreamSubscription<AuthenticationSnapshot>? _subscription;
 
   void initialize() {
     _publish(_interactor.snapshot.failure?.kind);
-    _subscription ??= _interactor.watchStatus().listen(
-      (result) => result.match((failure) => _publish(failure.kind), (_) => _publish(null)),
-    );
+    _subscription ??= _interactor.watchStatus().listen((account) => _publish(account.failure?.kind));
   }
 
   void _publish(AuthenticationFailureKind? failure) {

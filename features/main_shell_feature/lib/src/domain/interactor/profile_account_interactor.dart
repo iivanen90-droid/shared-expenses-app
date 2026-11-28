@@ -3,7 +3,7 @@ import 'package:main_shell_feature/src/domain/repository/profile_account_reposit
 
 abstract interface class ProfileAccountInteractor {
   AuthenticationSnapshot get snapshot;
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus();
+  Stream<AuthenticationSnapshot> watchStatus();
   Future<Either<AuthenticationFailure, Unit>> signOut();
 }
 
@@ -13,7 +13,7 @@ final class ProfileAccountInteractorImpl implements ProfileAccountInteractor {
   @override
   AuthenticationSnapshot get snapshot => _repository.snapshot;
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => _repository.watchStatus();
+  Stream<AuthenticationSnapshot> watchStatus() => _repository.watchStatus();
   @override
   Future<Either<AuthenticationFailure, Unit>> signOut() => _repository.signOut();
 }

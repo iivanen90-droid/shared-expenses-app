@@ -2,12 +2,13 @@ import 'package:core/core.dart';
 import 'package:main_shell_feature/src/domain/repository/profile_account_repository.dart';
 
 final class ProfileAccountRepositoryImpl implements ProfileAccountRepository {
-  const ProfileAccountRepositoryImpl({required this._service});
+  const ProfileAccountRepositoryImpl({required this._service, required this._sessions});
   final AuthService _service;
+  final AuthSessionSource _sessions;
   @override
-  AuthenticationSnapshot get snapshot => _service.snapshot;
+  AuthenticationSnapshot get snapshot => _sessions.current;
   @override
-  Stream<Either<AuthenticationFailure, AuthenticationStatus>> watchStatus() => _service.watchStatus();
+  Stream<AuthenticationSnapshot> watchStatus() => _sessions.watchChanges();
   @override
   Future<Either<AuthenticationFailure, Unit>> signOut() => _service.signOut();
 }

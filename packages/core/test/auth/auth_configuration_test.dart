@@ -59,8 +59,8 @@ void main() {
       configuration: const AuthConfiguration(url: '', publishableKey: '', environment: EnvironmentType.dev),
     );
     await Future.wait([service.initialize(), service.initialize()]);
-    expect(service.snapshot.session, AuthenticationStatus.unconfigured);
-    expect((await service.signInWithGoogle()).isLeft(), isTrue);
+    expect(service.sessionSource.current.session, AuthenticationStatus.unconfigured);
+    expect((await service.launchSignIn(source: AuthSource.google)).isLeft(), isTrue);
     await service.dispose();
   });
 
@@ -73,7 +73,7 @@ void main() {
       ),
     );
     await service.initialize();
-    expect(service.snapshot.failure?.kind, AuthenticationFailureKind.configuration);
+    expect(service.sessionSource.current.failure?.kind, AuthenticationFailureKind.configuration);
     await service.dispose();
   });
 }
